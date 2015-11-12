@@ -1,0 +1,13 @@
+body {
+	background-color: #222;
+}
+
+.canvasContainer {
+	width: 100%;
+	text-align: center;
+}
+
+#window {
+	display: inline;
+	border: solid 3px black;
+}
