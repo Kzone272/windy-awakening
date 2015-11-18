@@ -1,12 +1,20 @@
 <html>
   <head>
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
+    <script type="glsl" id="vertexShader">
+
+attribute vec2 position;
+function main() {
+  gl_posiiton = vec4(position, 0, 1);
+}
+
+    </script>
   </head>
   <body>
   	<div class="canvasContainer">
   	  <canvas id="window" width="1280" height="720"></canvas>
     </div>
 
-  	<script type="text/javascript" src="scripts/main.js"></script>
+    <script type="text/javascript" src="scripts/main.js"></script>
   </body>
 </html>
