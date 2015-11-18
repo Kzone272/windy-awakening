@@ -1,15 +1,31 @@
 <html>
   <head>
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
+    <script type="text/javascript" src="scripts/gl-matrix-min.js"></script>
     <script type="glsl" id="vertexShader">
 
-attribute vec2 position;
-function main() {
-  gl_posiiton = vec4(position, 0, 1);
+attribute vec3 position;
+
+uniform mat4 M;
+uniform mat4 V;
+uniform mat4 P;
+
+void main() {
+  gl_Position = P * M * vec4(position, 1);
 }
 
     </script>
-  </head>
+    <script type="glsl" id="fragmentShader">
+
+precision mediump float;
+
+uniform vec3 colour;
+void main() {
+  gl_FragColor = vec4(colour, 1);
+}
+
+    </script>
+</head>
   <body>
   	<div class="canvasContainer">
   	  <canvas id="window" width="1280" height="720"></canvas>
