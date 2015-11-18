@@ -3,6 +3,10 @@
 	{
 		"selected_items":
 		[
+			[
+				"view",
+				"viewportWidth"
+			]
 		]
 	},
 	"buffers":
@@ -11,7 +15,15 @@
 			"file": "website/index.html",
 			"settings":
 			{
-				"buffer_size": 0,
+				"buffer_size": 716,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "website/scripts/main.js",
+			"settings":
+			{
+				"buffer_size": 3058,
 				"line_ending": "Windows"
 			}
 		}
@@ -23,12 +35,16 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 0.0,
-		"last_filter": "",
+		"height": 242.0,
+		"last_filter": ":w",
 		"selected_items":
 		[
+			[
+				":w",
+				":w - Save"
+			]
 		],
-		"width": 0.0
+		"width": 416.0
 	},
 	"console":
 	{
@@ -48,10 +64,20 @@
 	},
 	"expanded_folders":
 	[
-		"/C/repos/windy-awakening"
+		"/C/repos/windy-awakening",
+		"/C/repos/windy-awakening/website",
+		"/C/repos/windy-awakening/website/scripts"
 	],
 	"file_history":
 	[
+		"/C/repos/windy-awakening/website/css/style.css",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/JSON.sublime-settings",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/HTML.sublime-settings",
+		"/C/repos/windy-awakening/windy-awakening.sublime-project",
 		"/C/repos/peacock/script/main.js",
 		"/C/repos/peacock/script/generation.js",
 		"/C/repos/peacock/script/globals.js",
@@ -59,7 +85,7 @@
 	],
 	"find":
 	{
-		"height": 27.0
+		"height": 36.0
 	},
 	"find_in_files":
 	{
@@ -74,6 +100,15 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"attrib",
+			"Atrtib",
+			"buffer",
+			"create",
+			"vertex",
+			"save",
+			"/save",
+			"center",
+			">\n",
 			"console.log"
 		],
 		"highlight": true,
@@ -82,6 +117,7 @@
 		"regex": false,
 		"replace_history":
 		[
+			"fragment"
 		],
 		"reverse": false,
 		"show_context": true,
@@ -92,7 +128,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -101,15 +137,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 0,
+						"buffer_size": 716,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								0,
-								0
+								310,
+								310
 							]
 						],
 						"settings":
@@ -120,6 +156,34 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "website/scripts/main.js",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 3058,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2598,
+								2598
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 1512.0,
+						"zoom_level": 1.0
+					},
 					"stack_index": 0,
 					"type": "text"
 				}
@@ -128,11 +192,11 @@
 	],
 	"incremental_find":
 	{
-		"height": 27.0
+		"height": 36.0
 	},
 	"input":
 	{
-		"height": 0.0
+		"height": 35.0
 	},
 	"layout":
 	{
@@ -165,7 +229,7 @@
 	"project": "windy-awakening.sublime-project",
 	"replace":
 	{
-		"height": 50.0
+		"height": 66.0
 	},
 	"save_all_on_build": true,
 	"select_file":
@@ -207,7 +271,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 161.0,
+	"side_bar_width": 294.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{
