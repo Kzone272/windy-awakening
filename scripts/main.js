@@ -54,12 +54,40 @@ function genCone() {
   return new Float32Array(verts);
 }
 
+function genRect() {
+  var verts = [
+    -ratio,  1, 1,
+     ratio,  1, 1,
+    -ratio, -1, 1,
+    -ratio, -1, 1,
+     ratio,  1, 1,
+     ratio, -1, 1,
+  ];
+
+  var texCoords = [
+    0, 0,
+    1, 0,
+    0, 1,
+    0, 1,
+    1, 0,
+    1, 1
+  ];
+
+  return new Float32Array(verts);
+}
+
 var coneBuffer;
 
 function initBuffers() {
   coneBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, coneBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, genCone(), gl.STATIC_DRAW)
+
+  rectBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, genRect(), gl.STATIC_DRAW)
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
 var M = mat4.create();
@@ -97,6 +125,32 @@ function draw() {
     gl.enableVertexAttribArray(program.posAtt)
     gl.vertexAttribPointer(program.posAtt, 3, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 34);
+  }
+}
+
+function createTexture() {
+  var texture = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, texture);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXUTE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXUTE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+
+  return texture;
+}
+
+function frameBuffer() {
+  var texture = createTexture();
+
+  var buffer = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);
+
+  gl.frameBufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+
+  return {
+    texture: texture,
+    buffer: buffer
   }
 }
 
