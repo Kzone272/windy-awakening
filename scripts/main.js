@@ -56,12 +56,12 @@ function genCone() {
 
 function genRect() {
   var verts = [
-    -ratio,  1, 1,
-     ratio,  1, 1,
-    -ratio, -1, 1,
-    -ratio, -1, 1,
-     ratio,  1, 1,
-     ratio, -1, 1,
+    -ratio,  1, -0.5,
+     ratio,  1, -0.5,
+    -ratio, -1, -0.5,
+    -ratio, -1, -0.5,
+     ratio,  1, -0.5,
+     ratio, -1, -0.5,
   ];
 
   var texCoords = [
@@ -90,10 +90,6 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 
-var M = mat4.create();
-var V = mat4.create();
-var P = mat4.create();
-
 var regions = [];
 function initRegions() {
   for (var i = 0; i < 50; i++) {
@@ -104,25 +100,37 @@ function initRegions() {
   }
 }
 
+var M = mat4.create();
+var V = mat4.create();
+var P = mat4.create();
+
 function draw() {
   requestAnimationFrame(draw);
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
+  gl.uniformMatrix4fv(program.mUni, false, M);
+  gl.uniformMatrix4fv(program.vUni, false, V);
+  gl.uniformMatrix4fv(program.pUni, false, P);
+
+  gl.uniform3fv(program.colUni, [1, 0, 0]);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(program.posAtt);
+  gl.vertexAttribPointer(program.posAtt, 3, gl.FLOAT, false, 0, 0);
+  gl.drawArrays(gl.TRIANGLES, 0, 2);
+
   for (var i = 0; i < regions.length; i++) {
     mat4.translate(M, mat4.create(), regions[i].pos);
 
-    regions[i].pos[0] += 0.001 * Math.random() - 0.0005;
-    regions[i].pos[1] += 0.001 * Math.random() - 0.0005;
+    regions[i].pos[0] += 0.002 * Math.random() - 0.001;
+    regions[i].pos[1] += 0.002 * Math.random() - 0.001;
 
     gl.uniformMatrix4fv(program.mUni, false, M);
-    gl.uniformMatrix4fv(program.vUni, false, V);
-    gl.uniformMatrix4fv(program.pUni, false, P);
-
     gl.uniform3fv(program.colUni, regions[i].colour);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, coneBuffer);
-    gl.enableVertexAttribArray(program.posAtt)
+    gl.enableVertexAttribArray(program.posAtt);
     gl.vertexAttribPointer(program.posAtt, 3, gl.FLOAT, false, 0, 0);
     gl.drawArrays(gl.TRIANGLE_FAN, 0, 34);
   }
