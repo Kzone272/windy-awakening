@@ -66,6 +66,14 @@ function initPrograms() {
     'uDir',
     'uTexture',
   ]);
+
+  waterProgram = createProgram('water', [
+    'aPos',
+    'aTexCoord',
+    'uM',
+    'uP',
+    'uTexture',
+  ]);
 }
 
 function genCone() {
@@ -113,141 +121,6 @@ function genRect() {
   };
 }
 
-var coneBuffer;
-var rectBuffer;
-var rectTexBuffer;
-var frameBuffer;
-var frameBuffer2;
-
-function initBuffers() {
-  var cone = genCone();
-  coneBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, coneBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, cone.verts, gl.STATIC_DRAW)
-
-  var rect = genRect();
-  rectBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, rect.verts, gl.STATIC_DRAW)
-
-  rectTexBuffer = gl.createBuffer();
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
-  gl.bufferData(gl.ARRAY_BUFFER, rect.texCoords, gl.STATIC_DRAW);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-  frameBuffer = createFrameBuffer();
-  frameBuffer2 = createFrameBuffer();
-}
-
-var regions = [];
-function initRegions() {
-  for (var i = 0; i < 200; i++) {
-    regions.push({
-      pos: [Math.random() * 2 * ratio - ratio, Math.random() * 2 - 1, 0],
-      colour: [Math.random(), Math.random(), Math.random()]
-    });
-  }
-}
-
-var M = mat4.create();
-var P = mat4.create();
-var orthoProj = mat4.create();
-var persProj = mat4.create();
-
-var frame = 0;
-
-function draw() {
-  requestAnimationFrame(draw);
-
-  gl.useProgram(voronoiProgram);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer.buffer);
-
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  mat4.identity(M);
-
-  gl.uniformMatrix4fv(voronoiProgram.uM, false, M);
-  gl.uniformMatrix4fv(voronoiProgram.uP, false, orthoProj);
-
-  for (var i = 0; i < regions.length; i++) {
-    //mat4.translate(M, mat4.create(), [regions[i].pos[0], regions[i].pos[1], 0]);
-    mat4.translate(M, mat4.create(), regions[i].pos);
-
-    regions[i].pos[0] += 0.008 * Math.random() - 0.004;
-    regions[i].pos[1] += 0.008 * Math.random() - 0.004;
-
-    gl.uniformMatrix4fv(voronoiProgram.uM, false, M);
-    gl.uniform3fv(voronoiProgram.uCol, regions[i].colour);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, coneBuffer);
-    gl.enableVertexAttribArray(voronoiProgram.aPos);
-    gl.vertexAttribPointer(voronoiProgram.aPos, 3, gl.FLOAT, false, 0, 0);
-    gl.drawArrays(gl.TRIANGLE_FAN, 0, 34);
-  }
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer2.buffer);
-
-  gl.useProgram(blurProgram);
-
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  mat4.identity(M);
-  mat4.translate(M, M, [0, 0, -6]);
-  //mat4.rotateY(M, M, frame * 0.01 );
-  //mat4.rotateX(M, M, -Math.PI / 4);
-  //mat4.scale(M, M, [3, 3, 3]);
-
-  gl.uniformMatrix4fv(blurProgram.uM, false, M);
-  gl.uniformMatrix4fv(blurProgram.uP, false, orthoProj);
-  gl.uniform2fv(blurProgram.uDir, [1, 0]);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, frameBuffer.texture);
-  gl.uniform1i(blurProgram.uTexture, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
-  gl.enableVertexAttribArray(blurProgram.aPos);
-  gl.vertexAttribPointer(blurProgram.aPos, 3, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
-  gl.enableVertexAttribArray(blurProgram.aTexCoord);
-  gl.vertexAttribPointer(blurProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-
-  mat4.identity(M);
-  mat4.translate(M, M, [0, -1, -6]);
-  mat4.rotateX(M, M, -Math.PI / 3);
-  mat4.rotateZ(M, M, frame * 0.01 );
-  mat4.scale(M, M, [3, 3, 3]);
-
-  gl.uniformMatrix4fv(blurProgram.uM, false, M);
-  gl.uniformMatrix4fv(blurProgram.uP, false, persProj);
-  gl.uniform2fv(blurProgram.uDir, [0, 1]);
-
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, frameBuffer2.texture);
-  gl.uniform1i(blurProgram.uTexture, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
-  gl.enableVertexAttribArray(blurProgram.aPos);
-  gl.vertexAttribPointer(blurProgram.aPos, 3, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
-  gl.enableVertexAttribArray(blurProgram.aTexCoord);
-  gl.vertexAttribPointer(blurProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-
-  gl.drawArrays(gl.TRIANGLES, 0, 6);
-
-  frame++;
-}
-
 function createTexture() {
   var texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -293,14 +166,181 @@ function createFrameBuffer() {
   }
 }
 
+var coneBuffer;
+var rectBuffer;
+var rectTexBuffer;
+var voronoiBuffer;
+var horizontalBlurBuffer;
+var blurBuffer;
+
+function initBuffers() {
+  var cone = genCone();
+  coneBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, coneBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, cone.verts, gl.STATIC_DRAW)
+
+  var rect = genRect();
+  rectBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, rect.verts, gl.STATIC_DRAW)
+
+  rectTexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, rect.texCoords, gl.STATIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+  voronoiBuffer = createFrameBuffer();
+  horizontalBlurBuffer = createFrameBuffer();
+  blurBuffer = createFrameBuffer();
+}
+
+var regions = [];
+function initRegions() {
+  for (var i = 0; i < 200; i++) {
+    regions.push({
+      pos: [Math.random() * 2 * ratio - ratio, Math.random() * 2 - 1, 0],
+      colour: [Math.random(), Math.random(), Math.random()]
+    });
+  }
+}
+
+var M = mat4.create();
+var P = mat4.create();
+var orthoProj = mat4.create();
+var perspProj = mat4.create();
+
+function drawVoronoi() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, voronoiBuffer.buffer);
+
+  gl.useProgram(voronoiProgram);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  mat4.identity(M);
+
+  gl.uniformMatrix4fv(voronoiProgram.uM, false, M);
+  gl.uniformMatrix4fv(voronoiProgram.uP, false, orthoProj);
+
+  for (var i = 0; i < regions.length; i++) {
+    mat4.translate(M, mat4.create(), regions[i].pos);
+
+    regions[i].pos[0] += 0.008 * Math.random() - 0.004;
+    regions[i].pos[1] += 0.008 * Math.random() - 0.004;
+
+    gl.uniformMatrix4fv(voronoiProgram.uM, false, M);
+    gl.uniform3fv(voronoiProgram.uCol, regions[i].colour);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, coneBuffer);
+    gl.enableVertexAttribArray(voronoiProgram.aPos);
+    gl.vertexAttribPointer(voronoiProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLE_FAN, 0, 34);
+  }
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+function drawBlur() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, horizontalBlurBuffer.buffer);
+
+  gl.useProgram(blurProgram);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  mat4.identity(M);
+  mat4.translate(M, M, [0, 0, -1]);
+
+  gl.uniformMatrix4fv(blurProgram.uM, false, M);
+  gl.uniformMatrix4fv(blurProgram.uP, false, orthoProj);
+  gl.uniform2fv(blurProgram.uDir, [1, 0]);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, voronoiBuffer.texture);
+  gl.uniform1i(blurProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(blurProgram.aPos);
+  gl.vertexAttribPointer(blurProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(blurProgram.aTexCoord);
+  gl.vertexAttribPointer(blurProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  gl.bindFramebuffer(gl.FRAMEBUFFER, blurBuffer.buffer);
+  //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.uniformMatrix4fv(blurProgram.uM, false, M);
+  gl.uniformMatrix4fv(blurProgram.uP, false, orthoProj);
+  gl.uniform2fv(blurProgram.uDir, [0, 1]);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, horizontalBlurBuffer.texture);
+  gl.uniform1i(blurProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(blurProgram.aPos);
+  gl.vertexAttribPointer(blurProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(blurProgram.aTexCoord);
+  gl.vertexAttribPointer(blurProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+  gl.bindTexture(gl.TEXTURE_2D, null);
+}
+
+function drawWater() {
+  gl.useProgram(waterProgram);
+
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  mat4.identity(M);
+  mat4.translate(M, M, [0, -1, -6]);
+  mat4.rotateX(M, M, -Math.PI / 3);
+  mat4.rotateZ(M, M, frame * 0.01 );
+  mat4.scale(M, M, [3, 3, 3]);
+
+  gl.uniformMatrix4fv(waterProgram.uM, false, M);
+  gl.uniformMatrix4fv(waterProgram.uP, false, perspProj);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, blurBuffer.texture);
+  gl.uniform1i(waterProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(waterProgram.aPos);
+  gl.vertexAttribPointer(waterProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(waterProgram.aTexCoord);
+  gl.vertexAttribPointer(waterProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
+var frame = 0;
+
+function draw() {
+  requestAnimationFrame(draw);
+
+  drawVoronoi();
+  drawBlur();
+  drawWater();
+
+  frame++;
+}
+
 function main() {
   initGL();
   initPrograms();
   initBuffers();
   initRegions();
 
-  mat4.ortho(orthoProj, -ratio, ratio, -1, 1, 0.1, 100);
-  mat4.perspective(persProj, Math.PI / 4, ratio, 0.1, 100);
+  mat4.ortho(orthoProj, -ratio, ratio, -1, 1, 0.1, 10);
+  mat4.perspective(perspProj, Math.PI / 4, ratio, 0.1, 100);
 
   gl.clearColor(0.2, 0.8, 1, 1.0);
   gl.enable(gl.DEPTH_TEST);
