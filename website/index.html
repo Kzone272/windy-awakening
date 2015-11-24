@@ -3,6 +3,35 @@
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
     <script type="text/javascript" src="scripts/gl-matrix-min.js"></script>
 
+    <script id="water-vs" type="x-shader/x-vertex">
+
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+uniform mat4 uM;
+uniform mat4 uP;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = uP * uM * vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+
+    </script>
+    <script id="water-fs" type="x-shader/x-fragment">
+
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+void main() {
+  gl_FragColor = texture2D(uTexture, vTexCoord);
+}
+
+    </script>
+
     <script id="voronoi-vs" type="x-shader/x-vertex">
 
 attribute vec3 aPos;
@@ -26,6 +55,7 @@ void main() {
 }
 
     </script>
+
     <script id="blur-vs" type="x-shader/x-vertex">
 
 attribute vec3 aPos;
