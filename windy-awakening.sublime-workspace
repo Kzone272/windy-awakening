@@ -4,6 +4,22 @@
 		"selected_items":
 		[
 			[
+				"TEX",
+				"TEXTURE_2D"
+			],
+			[
+				"rec",
+				"rectTexBuffer"
+			],
+			[
+				"draw",
+				"drawArrays"
+			],
+			[
+				"Te",
+				"textContent"
+			],
+			[
 				"view",
 				"viewportWidth"
 			]
@@ -15,7 +31,7 @@
 			"file": "website/index.html",
 			"settings":
 			{
-				"buffer_size": 716,
+				"buffer_size": 1236,
 				"line_ending": "Windows"
 			}
 		},
@@ -23,7 +39,7 @@
 			"file": "website/scripts/main.js",
 			"settings":
 			{
-				"buffer_size": 3058,
+				"buffer_size": 7772,
 				"line_ending": "Windows"
 			}
 		}
@@ -35,8 +51,8 @@
 	"build_varint": "",
 	"command_palette":
 	{
-		"height": 242.0,
-		"last_filter": ":w",
+		"height": 35.0,
+		"last_filter": "",
 		"selected_items":
 		[
 			[
@@ -70,10 +86,10 @@
 	],
 	"file_history":
 	[
-		"/C/repos/windy-awakening/website/css/style.css",
-		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/repos/windy-awakening/website/css/style.css",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/JSON.sublime-settings",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/HTML.sublime-settings",
@@ -97,9 +113,21 @@
 	},
 	"find_state":
 	{
-		"case_sensitive": false,
+		"case_sensitive": true,
 		"find_history":
 		[
+			"P)",
+			"P",
+			"createframe",
+			"console.log",
+			"program",
+			"recttexbuffer",
+			"bindbuffer",
+			"textureProgram",
+			"uni",
+			"att",
+			"vertex",
+			"cone",
 			"attrib",
 			"Atrtib",
 			"buffer",
@@ -117,6 +145,8 @@
 		"regex": false,
 		"replace_history":
 		[
+			"textureVertex",
+			"rect",
 			"fragment"
 		],
 		"reverse": false,
@@ -137,15 +167,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 716,
+						"buffer_size": 1236,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								310,
-								310
+								979,
+								979
 							]
 						],
 						"settings":
@@ -153,7 +183,7 @@
 							"syntax": "Packages/HTML/HTML.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 300.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -165,15 +195,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 3058,
+						"buffer_size": 7772,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								2598,
-								2598
+								7680,
+								7680
 							]
 						],
 						"settings":
@@ -181,7 +211,7 @@
 							"syntax": "Packages/JavaScript/JavaScript.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 1512.0,
+						"translation.y": 4412.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -271,7 +301,7 @@
 	"show_open_files": false,
 	"show_tabs": true,
 	"side_bar_visible": true,
-	"side_bar_width": 294.0,
+	"side_bar_width": 178.0,
 	"status_bar_visible": true,
 	"template_settings":
 	{

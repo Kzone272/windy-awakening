@@ -2,29 +2,75 @@
   <head>
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
     <script type="text/javascript" src="scripts/gl-matrix-min.js"></script>
-    <script type="glsl" id="vertexShader">
 
-attribute vec3 position;
+    <script id="voronoi-vs" type="x-shader/x-vertex">
 
-uniform mat4 M;
-uniform mat4 V;
-uniform mat4 P;
+attribute vec3 aPos;
+
+uniform mat4 uM;
+uniform mat4 uV;
+uniform mat4 uP;
 
 void main() {
-  gl_Position = P * M * vec4(position, 1);
+  gl_Position = uP * uV * uM * vec4(aPos, 1);
 }
 
     </script>
-    <script type="glsl" id="fragmentShader">
+    <script id="voronoi-fs" type="x-shader/x-fragment">
 
 precision mediump float;
 
-uniform vec3 colour;
+uniform vec3 uCol;
+
 void main() {
-  gl_FragColor = vec4(colour, 1);
+  gl_FragColor = vec4(uCol, 1);
 }
 
     </script>
+    <script id="blur-vs" type="x-shader/x-vertex">
+
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+uniform mat4 uM;
+uniform mat4 uV;
+uniform mat4 uP;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = uP * uV * uM * vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+
+    </script>
+    <script id="blur-fs" type="x-shader/x-fragment">
+
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform vec2 uDir;
+uniform sampler2D uTexture;
+
+void main() {
+  float blur = 10.0;
+  const int kernel = 20;
+
+  float hstep = blur * uDir.x / 1280.0 / float(2 * kernel + 1);
+  float vstep = blur * uDir.y / 720.0 / float(2 * kernel + 1);
+
+  vec4 sum = vec4(0.0);
+  for (int i = -kernel; i < kernel + 1; i++) {
+    float x = clamp(vTexCoord.s + float(i) * hstep, 0.0, 1.0);
+    float y = clamp(vTexCoord.t + float(i) * vstep, 0.0, 1.0);
+    sum += texture2D(uTexture, vec2(x, y));
+  }
+
+  gl_FragColor = vec4(sum.rgb / float(2 * kernel + 1), 1.0);
+}
+
+    </script>
+
 </head>
   <body>
   	<div class="canvasContainer">

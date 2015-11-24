@@ -69,21 +69,21 @@ And finally, we'll apply a simple threshold mapping, and add the result to a blu
 
 \pagebreak
 
-These mockups were created using Photoshop as a proof of concept, to demonstrate that this type of image could be generated using a simple enough set of steps that could be replicated in shader code.  The goal is to generate this live so the wave shapes can move over time, assuming it can be done fast enough.  If however this turns out to be too costly, I will settle for a one time generation at runtime.
+These mockups were created using Photoshop as a proof of concept, to demonstrate that this type of image could be generated using a simple enough set of steps that could be replicated in shader code.  Each Voronoi region will slowly move in a random direction so the diagram as a whole will gradually change over time.  The goal is to generate this live so the wave shapes can move over time, assuming it can be done fast enough.  If however this turns out to be too costly, I will settle for a one time generation at runtime.
 
-For the islands, I intend to generate some Perlin Noise to use as a height map for the islands.
+For the islands, I intend to generate some Perlin Noise to use as a height map for the islands.  It will take some experimenting with thresholds and scaling to determine what works best for convincing islands.  Once I have the height map, I'll simply start with a flat grid of triangles, and use the intensity of the map as the y-value for each point.
 
-I will implement a simple day-night cycle, with light direction, colour, and intensity varying over time.
+I plan to implement a Gooch Lighting model where lighter spots tend to be yellower, and darker spots tend to be more blue.  I will demonstrate this effect by adding a simple day-night cycle, with light direction, and intensity varying over time.
 
-Simple physics to make the motion of the boat through water will be added to attempt some semblance of realism.  Of course I won't be modeling real fluid dynamics, simply an approximation of the boats motion.
+Simple physics to make the motion of the boat through water will be added to attempt some semblance of realism.  Of course I won't be modeling real fluid dynamics, simply an approximation of the boats motion.  I intend to implement a simple dynamics model accounting for a thrusting forward force, and water resistance dragging force that increases with speed. 
 
-I will be supporting texture maps for the scene geometry to allow for much more precise character detailing.
+I will be supporting texture maps for the scene geometry to allow for much more precise character detailing.  Texture maps should follow a fairly standard thing implementation in WebGL.
 
 In order to save some time, I will be using models from the original Wind Waker game.  These will be of much higher quality than anything I could produce, and won't require the otherwise massive time sink to model and texture things myself.
 
-I will also be implementing shadows, using the common shadow mapping technique for added depth.
+I will also be implementing shadows, using the common shadow mapping technique for added depth.  Since I intend to rely solely on the Sun as the light source, a directional light will be appropriate.  This will also make the shadow mapping a bit easier, because I will only need to render from the light's perspective once.
 
-For final polish, I'll be implementing cell shading (for the character at least), and a bloom shader to highlight bright spots.
+For final polish, I'll be implementing cell shading (for the character at least), and a bloom shader to highlight bright spots.  The bloom shader will be able to reuse some of the blurring shader used for the water texture, with a bit of extra effort to selectively blur only the brightest parts of the frame, and add that to the final result.
 
 \item[Bibliography]:\\
 
@@ -119,7 +119,7 @@ Soft Shadow Mapping,\\
 
      \item[\_\_\_ 4:]  Bloom Shader
 
-     \item[\_\_\_ 5:]  Day Night Cycle
+     \item[\_\_\_ 5:]  Gooch Lighting Model and Day/Night Cycle
 
      \item[\_\_\_ 6:]  Voronoi Diagrams
 
