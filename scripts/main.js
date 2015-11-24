@@ -54,7 +54,6 @@ function initPrograms() {
   voronoiProgram = createProgram('voronoi', [
     'aPos',
     'uM',
-    'uV',
     'uP',
     'uCol',
   ]);
@@ -63,7 +62,6 @@ function initPrograms() {
     'aPos',
     'aTexCoord',
     'uM',
-    'uV',
     'uP',
     'uDir',
     'uTexture',
@@ -153,7 +151,6 @@ function initRegions() {
 }
 
 var M = mat4.create();
-var V = mat4.create();
 var P = mat4.create();
 var orthoProj = mat4.create();
 var persProj = mat4.create();
@@ -172,7 +169,6 @@ function draw() {
   mat4.identity(M);
 
   gl.uniformMatrix4fv(voronoiProgram.uM, false, M);
-  gl.uniformMatrix4fv(voronoiProgram.uV, false, V);
   gl.uniformMatrix4fv(voronoiProgram.uP, false, orthoProj);
 
   for (var i = 0; i < regions.length; i++) {
@@ -205,7 +201,6 @@ function draw() {
   //mat4.scale(M, M, [3, 3, 3]);
 
   gl.uniformMatrix4fv(blurProgram.uM, false, M);
-  gl.uniformMatrix4fv(blurProgram.uV, false, V);
   gl.uniformMatrix4fv(blurProgram.uP, false, orthoProj);
   gl.uniform2fv(blurProgram.uDir, [1, 0]);
 
@@ -232,7 +227,6 @@ function draw() {
   mat4.scale(M, M, [3, 3, 3]);
 
   gl.uniformMatrix4fv(blurProgram.uM, false, M);
-  gl.uniformMatrix4fv(blurProgram.uV, false, V);
   gl.uniformMatrix4fv(blurProgram.uP, false, persProj);
   gl.uniform2fv(blurProgram.uDir, [0, 1]);
 
@@ -298,8 +292,6 @@ function createFrameBuffer() {
     buffer: buffer
   }
 }
-
-var texture;
 
 function main() {
   initGL();

@@ -8,11 +8,10 @@
 attribute vec3 aPos;
 
 uniform mat4 uM;
-uniform mat4 uV;
 uniform mat4 uP;
 
 void main() {
-  gl_Position = uP * uV * uM * vec4(aPos, 1);
+  gl_Position = uP * uM * vec4(aPos, 1);
 }
 
     </script>
@@ -33,13 +32,12 @@ attribute vec3 aPos;
 attribute vec2 aTexCoord;
 
 uniform mat4 uM;
-uniform mat4 uV;
 uniform mat4 uP;
 
 varying highp vec2 vTexCoord;
 
 void main() {
-  gl_Position = uP * uV * uM * vec4(aPos, 1);
+  gl_Position = uP * uM * vec4(aPos, 1);
   vTexCoord = aTexCoord;
 }
 
