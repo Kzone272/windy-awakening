@@ -58,6 +58,14 @@ function initPrograms() {
     'uCol',
   ]);
 
+  edgesProgram = createProgram('edges', [
+    'aPos',
+    'aTexCoord',
+    'uM',
+    'uP',
+    'uTexture',
+  ]);
+
   blurProgram = createProgram('blur', [
     'aPos',
     'aTexCoord',
@@ -170,6 +178,7 @@ var coneBuffer;
 var rectBuffer;
 var rectTexBuffer;
 var voronoiBuffer;
+var edgesBuffer;
 var horizontalBlurBuffer;
 var blurBuffer;
 
@@ -191,13 +200,14 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   voronoiBuffer = createFrameBuffer();
+  edgesBuffer = createFrameBuffer();
   horizontalBlurBuffer = createFrameBuffer();
   blurBuffer = createFrameBuffer();
 }
 
 var regions = [];
 function initRegions() {
-  for (var i = 0; i < 200; i++) {
+  for (var i = 0; i < 50; i++) {
     regions.push({
       pos: [Math.random() * 2 * ratio - ratio, Math.random() * 2 - 1, 0],
       colour: [Math.random(), Math.random(), Math.random()]
@@ -239,6 +249,33 @@ function drawVoronoi() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
+function drawEdges() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, edgesBuffer.buffer);
+
+  gl.useProgram(edgesProgram);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  mat4.identity(M);
+  mat4.translate(M, M, [0, 0, -1]);
+
+  gl.uniformMatrix4fv(edgesProgram.uM, false, M);
+  gl.uniformMatrix4fv(edgesProgram.uP, false, orthoProj);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, voronoiBuffer.texture);
+  gl.uniform1i(edgesProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(edgesProgram.aPos);
+  gl.vertexAttribPointer(edgesProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(edgesProgram.aTexCoord);
+  gl.vertexAttribPointer(edgesProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+}
+
 function drawBlur() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, horizontalBlurBuffer.buffer);
 
@@ -253,7 +290,7 @@ function drawBlur() {
   gl.uniform2fv(blurProgram.uDir, [1, 0]);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, voronoiBuffer.texture);
+  gl.bindTexture(gl.TEXTURE_2D, edgesBuffer.texture);
   gl.uniform1i(blurProgram.uTexture, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
@@ -267,7 +304,6 @@ function drawBlur() {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   gl.bindFramebuffer(gl.FRAMEBUFFER, blurBuffer.buffer);
-  //gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -290,11 +326,11 @@ function drawBlur() {
   gl.drawArrays(gl.TRIANGLES, 0, 6);
 
   gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
 function drawWater() {
   gl.useProgram(waterProgram);
-
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   mat4.identity(M);
@@ -327,6 +363,7 @@ function draw() {
   requestAnimationFrame(draw);
 
   drawVoronoi();
+  drawEdges();
   drawBlur();
   drawWater();
 

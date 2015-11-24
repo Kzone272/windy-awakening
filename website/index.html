@@ -27,7 +27,58 @@ varying highp vec2 vTexCoord;
 uniform sampler2D uTexture;
 
 void main() {
-  gl_FragColor = texture2D(uTexture, vTexCoord);
+  vec3 colour = texture2D(uTexture, vTexCoord).rgb;
+
+  if (length(colour) > 0.15) {
+    gl_FragColor = vec4(1);
+  } else {
+    gl_FragColor = vec4(0.2, 0.5, 1.0, 1.0);
+  }
+}
+
+    </script>
+
+    <script id="edges-vs" type="x-shader/x-vertex">
+
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+uniform mat4 uM;
+uniform mat4 uP;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = uP * uM * vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+
+    </script>
+    <script id="edges-fs" type="x-shader/x-fragment">
+
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+float hstep = 1.0 / 1280.0;
+float vstep = 1.0 / 720.0;
+
+void main() {
+  vec3 up = texture2D(uTexture, vec2(vTexCoord.x, max(vTexCoord.y - vstep, 0.0))).rgb;
+  vec3 down = texture2D(uTexture, vec2(vTexCoord.x, min(vTexCoord.y + vstep, 1.0))).rgb;
+  vec3 left = texture2D(uTexture, vec2(max(vTexCoord.x - hstep, 0.0), vTexCoord.y)).rgb;
+  vec3 right = texture2D(uTexture, vec2(min(vTexCoord.x + hstep, 1.0), vTexCoord.y)).rgb;
+
+  float I = (distance(up, down) + distance(left, right)) / 2.0;
+
+  if (I > 0.0) {
+    I = 1.0;
+  } else {
+    I = 0.0;
+  }
+
+  gl_FragColor = vec4(vec3(I), 1);
 }
 
     </script>
@@ -81,7 +132,7 @@ uniform vec2 uDir;
 uniform sampler2D uTexture;
 
 void main() {
-  float blur = 10.0;
+  float blur = 15.0;
   const int kernel = 20;
 
   float hstep = blur * uDir.x / 1280.0 / float(2 * kernel + 1);
