@@ -3,72 +3,53 @@
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
     <script type="text/javascript" src="scripts/gl-matrix-min.js"></script>
 
-    <script id="water-vs" type="x-shader/x-vertex">
-
+<script id="voronoi-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
-attribute vec2 aTexCoord;
 
 uniform mat4 uM;
 uniform mat4 uP;
 
-varying highp vec2 vTexCoord;
-
 void main() {
   gl_Position = uP * uM * vec4(aPos, 1);
-  vTexCoord = aTexCoord;
 }
+</script>
+<script id="voronoi-fs" type="x-shader/x-fragment">
+precision mediump float;
 
-    </script>
-    <script id="water-fs" type="x-shader/x-fragment">
-
-precision highp float;
-
-varying highp vec2 vTexCoord;
-uniform sampler2D uTexture;
+uniform vec3 uCol;
 
 void main() {
-  vec3 colour = texture2D(uTexture, vTexCoord).rgb;
-
-  if (length(colour) > 0.15) {
-    gl_FragColor = vec4(1);
-  } else {
-    gl_FragColor = vec4(0.2, 0.5, 1.0, 1.0);
-  }
+  gl_FragColor = vec4(uCol, 1);
 }
+</script>
 
-    </script>
-
-    <script id="edges-vs" type="x-shader/x-vertex">
-
+<script id="edges-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
 attribute vec2 aTexCoord;
 
-uniform mat4 uM;
-uniform mat4 uP;
-
 varying highp vec2 vTexCoord;
 
 void main() {
-  gl_Position = uP * uM * vec4(aPos, 1);
+  gl_Position = vec4(aPos, 1);
   vTexCoord = aTexCoord;
 }
-
-    </script>
-    <script id="edges-fs" type="x-shader/x-fragment">
-
+</script>
+<script id="edges-fs" type="x-shader/x-fragment">
 precision highp float;
 
 varying highp vec2 vTexCoord;
+uniform int uWidth;
+uniform int uHeight;
 uniform sampler2D uTexture;
 
-float hstep = 1.0 / 1280.0;
-float vstep = 1.0 / 720.0;
-
 void main() {
-  vec3 up = texture2D(uTexture, vec2(vTexCoord.x, max(vTexCoord.y - vstep, 0.0))).rgb;
-  vec3 down = texture2D(uTexture, vec2(vTexCoord.x, min(vTexCoord.y + vstep, 1.0))).rgb;
-  vec3 left = texture2D(uTexture, vec2(max(vTexCoord.x - hstep, 0.0), vTexCoord.y)).rgb;
-  vec3 right = texture2D(uTexture, vec2(min(vTexCoord.x + hstep, 1.0), vTexCoord.y)).rgb;
+  float hstep = 1.0 / float(uWidth);
+  float vstep = 1.0 / float(uHeight);
+
+  vec3 up = texture2D(uTexture, vec2(vTexCoord.s, max(vTexCoord.t - vstep, 0.0))).rgb;
+  vec3 down = texture2D(uTexture, vec2(vTexCoord.s, min(vTexCoord.t + vstep, 1.0))).rgb;
+  vec3 left = texture2D(uTexture, vec2(max(vTexCoord.s - hstep, 0.0), vTexCoord.t)).rgb;
+  vec3 right = texture2D(uTexture, vec2(min(vTexCoord.s + hstep, 1.0), vTexCoord.t)).rgb;
 
   float I = (distance(up, down) + distance(left, right)) / 2.0;
 
@@ -80,54 +61,27 @@ void main() {
 
   gl_FragColor = vec4(vec3(I), 1);
 }
+</script>
 
-    </script>
-
-    <script id="voronoi-vs" type="x-shader/x-vertex">
-
-attribute vec3 aPos;
-
-uniform mat4 uM;
-uniform mat4 uP;
-
-void main() {
-  gl_Position = uP * uM * vec4(aPos, 1);
-}
-
-    </script>
-    <script id="voronoi-fs" type="x-shader/x-fragment">
-
-precision mediump float;
-
-uniform vec3 uCol;
-
-void main() {
-  gl_FragColor = vec4(uCol, 1);
-}
-
-    </script>
-
-    <script id="blur-vs" type="x-shader/x-vertex">
-
+<script id="blur-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
 attribute vec2 aTexCoord;
-
-uniform mat4 uM;
-uniform mat4 uP;
 
 varying highp vec2 vTexCoord;
 
 void main() {
-  gl_Position = uP * uM * vec4(aPos, 1);
+  gl_Position = vec4(aPos, 1);
   vTexCoord = aTexCoord;
 }
 
-    </script>
-    <script id="blur-fs" type="x-shader/x-fragment">
+</script>
+<script id="blur-fs" type="x-shader/x-fragment">
 
 precision highp float;
 
 varying highp vec2 vTexCoord;
+uniform int uWidth;
+uniform int uHeight;
 uniform vec2 uDir;
 uniform sampler2D uTexture;
 
@@ -135,8 +89,8 @@ void main() {
   float blur = 15.0;
   const int kernel = 20;
 
-  float hstep = blur * uDir.x / 1280.0 / float(2 * kernel + 1);
-  float vstep = blur * uDir.y / 720.0 / float(2 * kernel + 1);
+  float hstep = blur * uDir.x / float(uWidth) / float(2 * kernel + 1);
+  float vstep = blur * uDir.y / float(uHeight) / float(2 * kernel + 1);
 
   vec4 sum = vec4(0.0);
   for (int i = -kernel; i < kernel + 1; i++) {
@@ -147,11 +101,76 @@ void main() {
 
   gl_FragColor = vec4(sum.rgb / float(2 * kernel + 1), 1.0);
 }
+</script>
 
-    </script>
+<script id="water-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
 
-</head>
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+</script>
+<script id="water-fs" type="x-shader/x-fragment">
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+void main() {
+  vec3 colour = texture2D(uTexture, vTexCoord).rgb;
+  vec3 blue = vec3(0.0, 0.56, 1.0);
+  float waves = 0.6;
+
+  if (length(colour) > 0.15) {
+    gl_FragColor = vec4((1.0 - waves) * blue + waves * vec3(1), 1);
+  } else {
+    gl_FragColor = vec4(blue, 1);
+  }
+}
+</script>
+
+<script id="scene-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+uniform mat4 uM;
+uniform mat4 uV;
+uniform mat4 uP;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = uP * uV * uM * vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+</script>
+<script id="scene-fs" type="x-shader/x-fragment">
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+void main() {
+  gl_FragColor = texture2D(uTexture, vTexCoord);
+}
+</script>
+
+  </head>
   <body>
+    <div class="controls">
+      <form>
+        <input type="checkbox" checked id="edges" name="edges" />
+        <label for="edges">Detect Edges</label>
+        <input type="checkbox" checked id="blur" name="blur" />
+        <label for="blur">Blur</label>
+        <input type="checkbox" checked id="water" name="water" />
+        <label for="water">Water Colouring</label>
+      </form>
+    </div>
   	<div class="canvasContainer">
   	  <canvas id="window" width="1280" height="720"></canvas>
     </div>
