@@ -594,6 +594,6 @@ function main() {
   draw();
 }
 
-var toonLink = parseObj('assets/toonlink/toonlink', function () {
+var toonLink = parseObjMtl('assets/toonlink/toonlink', function () {
   main();
 });
