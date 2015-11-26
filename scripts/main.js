@@ -189,6 +189,16 @@ function genWater() {
   };
 }
 
+function genObj(object) {
+  return {
+    verts: new Float32Array(object.verts),
+    normals: new Float32Array(object.normals),
+    texCoords: new Float32Array(object.texCoords),
+    numItems: object.verts.length / 3,
+    groups: object.groups,
+  }
+}
+
 function createTexture(width, height) {
   var texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -237,6 +247,9 @@ var rectBuffer;
 var rectTexBuffer;
 var waterBuffer;
 var waterTexBuffer;
+var linkBuffer;
+var linkNormBuffer;
+var linkTexBuffer;
 
 var lastFrame;
 var voronoiFrame;
@@ -271,6 +284,21 @@ function initBuffers() {
   waterTexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, water.texCoords, gl.STATIC_DRAW);
+
+  var link = genObj(toonLink);
+  linkBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, link.verts, gl.STATIC_DRAW);
+  linkBuffer.numItems = link.numItems;
+  linkBuffer.groups = link.groups;
+
+  linkNormBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkNormBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, link.normals, gl.STATIC_DRAW);
+
+  linkTexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkTexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, link.texCoords, gl.STATIC_DRAW);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -474,7 +502,7 @@ function drawScene() {
   mat4.identity(M);
   mat4.translate(M, M, [0, -0.5, 0]);
   mat4.rotateX(M, M, Math.PI / 10);
-  mat4.rotateY(M, M, frame * 0.001 );
+  mat4.rotateY(M, M, frame * 0.001);
 
   gl.uniformMatrix4fv(sceneProgram.uM, false, M);
   gl.uniformMatrix4fv(sceneProgram.uV, false, V);
@@ -494,6 +522,27 @@ function drawScene() {
 
   gl.drawArrays(gl.TRIANGLES, 0, waterBuffer.numItems);
 
+  mat4.identity(M);
+  mat4.translate(M, M, [0, -0.1, -0.5]);
+  mat4.scale(M, M, [0.002, 0.002, 0.002]);
+  mat4.rotateY(M, M, frame * 0.01);
+
+  gl.uniformMatrix4fv(sceneProgram.uM, false, M);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aPos);
+  gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkTexBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aTexCoord);
+  gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  for (var i = 0; i < linkBuffer.groups.length; i++) {
+    var group = linkBuffer.groups[i];
+
+    gl.drawArrays(gl.TRIANGLES, group.offset, group.size);
+  }
+
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
 }
@@ -508,6 +557,7 @@ function draw() {
     drawEdges();
   }
   if (blurCheckbox.checked) {
+    drawBlur();
     drawBlur();
   }
   if (waterCheckbox.checked) {
@@ -544,4 +594,6 @@ function main() {
   draw();
 }
 
-main();
+var toonLink = parseObj('assets/toonlink/toonlink', function () {
+  main();
+});

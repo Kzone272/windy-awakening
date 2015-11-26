@@ -1,7 +1,7 @@
 <html>
   <head>
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
-    <script type="text/javascript" src="scripts/gl-matrix-min.js"></script>
+    <script type="text/javascript" src="scripts/lib/gl-matrix.js"></script>
 
 <script id="voronoi-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
@@ -123,9 +123,9 @@ uniform sampler2D uTexture;
 void main() {
   vec3 colour = texture2D(uTexture, vTexCoord).rgb;
   vec3 blue = vec3(0.0, 0.56, 1.0);
-  float waves = 0.6;
+  float waves = 0.3;
 
-  if (length(colour) > 0.15) {
+  if (length(colour) > 0.1) {
     gl_FragColor = vec4((1.0 - waves) * blue + waves * vec3(1), 1);
   } else {
     gl_FragColor = vec4(blue, 1);
@@ -175,6 +175,7 @@ void main() {
   	  <canvas id="window" width="1280" height="720"></canvas>
     </div>
 
+    <script type="text/javascript" src="scripts/objParser.js"></script>
     <script type="text/javascript" src="scripts/main.js"></script>
   </body>
 </html>
