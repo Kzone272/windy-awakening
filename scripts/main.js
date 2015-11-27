@@ -88,6 +88,7 @@ function initPrograms() {
     'uModelView',
     'uNormalMatrix',
     'uP',
+    'uLightDir',
     'uTexture',
   ]);
 }
@@ -539,6 +540,8 @@ function drawScene() {
   gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
   gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
   gl.uniformMatrix4fv(sceneProgram.uP, false, perspProj);
+  //gl.uniform3fv(sceneProgram.uLightDir, [-0.5, -1, 0]);
+  gl.uniform3fv(sceneProgram.uLightDir, [-0.5, 3, 0]);
 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
@@ -550,7 +553,7 @@ function drawScene() {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, waterNormBuffer);
   gl.enableVertexAttribArray(sceneProgram.aNorm);
-  gl.vertexAttribPointer(sceneProgram.aNorm, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
   gl.enableVertexAttribArray(sceneProgram.aTexCoord);
@@ -559,8 +562,9 @@ function drawScene() {
   gl.drawArrays(gl.TRIANGLES, 0, waterBuffer.numItems);
 
   mat4.identity(M);
-  mat4.translate(M, M, [0, -0.1, -0.5]);
+  mat4.translate(M, M, [0, -0.1, -1.5]);
   mat4.scale(M, M, [0.002, 0.002, 0.002]);
+  mat4.rotateX(M, M, 0.5);
   mat4.rotateY(M, M, frame * 0.01);
 
   mat4.identity(V);
@@ -581,7 +585,7 @@ function drawScene() {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, linkNormBuffer);
   gl.enableVertexAttribArray(sceneProgram.aNorm);
-  gl.vertexAttribPointer(sceneProgram.aNorm, 2, gl.FLOAT, false, 0, 0);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, linkTexBuffer);
   gl.enableVertexAttribArray(sceneProgram.aTexCoord);
@@ -648,6 +652,6 @@ function main() {
   draw();
 }
 
-var toonLink = parseObjMtl('assets/toonlink/toonlink', function () {
+var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
   main();
 });

@@ -49,12 +49,11 @@ function parseObj(name, done) {
               g: currentGroup
             });
           }
-        } else if (tokens[0] == 'g') {
-          currentGroup = {
-            name: tokens[1]
-          }
         } else if (tokens[0] == 'usemtl') {
-          currentGroup.material = tokens[1];
+          currentGroup = {
+            name: tokens[1],
+            material: tokens[1],
+          }
         } else {
           continue;
         }
