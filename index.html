@@ -135,27 +135,44 @@ void main() {
 
 <script id="scene-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
+attribute vec3 aNorm;
 attribute vec2 aTexCoord;
 
-uniform mat4 uM;
-uniform mat4 uV;
+uniform mat4 uModelView;
+uniform mat4 uNormalMatrix;
 uniform mat4 uP;
 
+varying highp vec3 vPos;
+varying highp vec3 vNorm;
 varying highp vec2 vTexCoord;
 
 void main() {
-  gl_Position = uP * uV * uM * vec4(aPos, 1);
+  gl_Position = uP * uModelView * vec4(aPos, 1);
+
+  vPos = vec3(uModelView * vec4(aPos, 1));
+  vNorm = vec3(uNormalMatrix * vec4(aNorm, 1));
   vTexCoord = aTexCoord;
 }
 </script>
 <script id="scene-fs" type="x-shader/x-fragment">
 precision highp float;
 
+varying highp vec3 vPos;
+varying highp vec3 vNorm;
 varying highp vec2 vTexCoord;
+
 uniform sampler2D uTexture;
 
 void main() {
-  gl_FragColor = texture2D(uTexture, vTexCoord);
+  vec3 kd = texture2D(uTexture, vTexCoord).rgb;
+
+  vec3 E = normalize(-vPos);
+  vec3 N = normalize(vNorm);
+
+  float ki = dot(E, N);
+  ki = 1.0;
+
+  gl_FragColor = vec4(ki * kd, 1);
 }
 </script>
 
