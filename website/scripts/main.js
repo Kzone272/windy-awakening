@@ -83,9 +83,10 @@ function initPrograms() {
 
   sceneProgram = createProgram('scene', [
     'aPos',
+    'aNorm',
     'aTexCoord',
-    'uM',
-    'uV',
+    'uModelView',
+    'uNormalMatrix',
     'uP',
     'uTexture',
   ]);
@@ -145,6 +146,7 @@ function genWater() {
   var half = width / 2;
 
   var verts = [];
+  var normals = [];
   var texCoords = [];
 
   for (var i = -density; i < density; i++) {
@@ -182,31 +184,48 @@ function genWater() {
     }
   }
 
+  for (var i = 0; i < verts.length; i += 3) {
+    normals.push(0, 1, 0);
+  }
+
   return {
     verts: new Float32Array(verts),
+    normals: new Float32Array(normals),
     texCoords: new Float32Array(texCoords),
     numItems:  6 * (2 * density) * (2 * density),
   };
 }
 
 function genObj(object) {
+  var textures = {};
+
+  for (var key in object.textures) {
+    textures[key] = createTexture(null, null, object.textures[key]);
+  }
+
   return {
     verts: new Float32Array(object.verts),
     normals: new Float32Array(object.normals),
     texCoords: new Float32Array(object.texCoords),
     numItems: object.verts.length / 3,
     groups: object.groups,
+    textures: textures,
   }
 }
 
-function createTexture(width, height) {
+function createTexture(width, height, image) {
   var texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  if (image) {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  } else {
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+  }
   gl.bindTexture(gl.TEXTURE_2D, null);
 
   return texture;
@@ -246,7 +265,9 @@ var coneBuffer;
 var rectBuffer;
 var rectTexBuffer;
 var waterBuffer;
+var waterNormBuffer;
 var waterTexBuffer;
+var link;
 var linkBuffer;
 var linkNormBuffer;
 var linkTexBuffer;
@@ -281,16 +302,18 @@ function initBuffers() {
   gl.bufferData(gl.ARRAY_BUFFER, water.verts, gl.STATIC_DRAW)
   waterBuffer.numItems = water.numItems;
 
+  waterNormBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, waterNormBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, water.normals, gl.STATIC_DRAW);
+
   waterTexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, water.texCoords, gl.STATIC_DRAW);
 
-  var link = genObj(toonLink);
+  link = genObj(toonLink);
   linkBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, link.verts, gl.STATIC_DRAW);
-  linkBuffer.numItems = link.numItems;
-  linkBuffer.groups = link.groups;
 
   linkNormBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, linkNormBuffer);
@@ -504,8 +527,17 @@ function drawScene() {
   mat4.rotateX(M, M, Math.PI / 10);
   mat4.rotateY(M, M, frame * 0.001);
 
-  gl.uniformMatrix4fv(sceneProgram.uM, false, M);
-  gl.uniformMatrix4fv(sceneProgram.uV, false, V);
+  mat4.identity(V);
+
+  var modelView = mat4.create();
+  mat4.multiply(modelView, V, M);
+
+  var normalMatrix = mat4.create();
+  mat4.invert(normalMatrix, modelView);
+  mat4.transpose(normalMatrix, normalMatrix);
+
+  gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
+  gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
   gl.uniformMatrix4fv(sceneProgram.uP, false, perspProj);
 
   gl.activeTexture(gl.TEXTURE0);
@@ -515,6 +547,10 @@ function drawScene() {
   gl.bindBuffer(gl.ARRAY_BUFFER, waterBuffer);
   gl.enableVertexAttribArray(sceneProgram.aPos);
   gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, waterNormBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aNorm);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 2, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
   gl.enableVertexAttribArray(sceneProgram.aTexCoord);
@@ -527,18 +563,36 @@ function drawScene() {
   mat4.scale(M, M, [0.002, 0.002, 0.002]);
   mat4.rotateY(M, M, frame * 0.01);
 
-  gl.uniformMatrix4fv(sceneProgram.uM, false, M);
+  mat4.identity(V);
+
+  var modelView = mat4.create();
+  mat4.multiply(modelView, V, M);
+
+  var normalMatrix = mat4.create();
+  mat4.invert(normalMatrix, modelView);
+  mat4.transpose(normalMatrix, normalMatrix);
+
+  gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
+  gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
   gl.enableVertexAttribArray(sceneProgram.aPos);
   gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
 
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkNormBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aNorm);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 2, gl.FLOAT, false, 0, 0);
+
   gl.bindBuffer(gl.ARRAY_BUFFER, linkTexBuffer);
   gl.enableVertexAttribArray(sceneProgram.aTexCoord);
   gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
-  for (var i = 0; i < linkBuffer.groups.length; i++) {
-    var group = linkBuffer.groups[i];
+  for (var i = 0; i < link.groups.length; i++) {
+    var group = link.groups[i];
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, link.textures[group.material]);
+    gl.uniform1i(sceneProgram.uTexture, 0);
 
     gl.drawArrays(gl.TRIANGLES, group.offset, group.size);
   }

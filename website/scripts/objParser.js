@@ -69,7 +69,6 @@ function parseObj(name, done) {
       for (var i = 0; i < faces.length; i++) {
         var face = faces[i];
 
-        console.log(face.g.name + '   ' + previousGroupName);
         if (face.g.name !== previousGroupName) {
           if (obj.groups.length) {
             var lastGroup = obj.groups[obj.groups.length - 1];
