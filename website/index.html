@@ -161,18 +161,26 @@ varying highp vec3 vPos;
 varying highp vec3 vNorm;
 varying highp vec2 vTexCoord;
 
+uniform vec3 uLightDir;
 uniform sampler2D uTexture;
 
 void main() {
   vec3 kd = texture2D(uTexture, vTexCoord).rgb;
 
   vec3 E = normalize(-vPos);
+  vec3 L = normalize(uLightDir - vPos);
   vec3 N = normalize(vNorm);
+  vec3 up = normalize(vec3(0, 1, 0));
 
-  float ki = dot(E, N);
-  ki = 1.0;
+  float ki = 0.7 * max(dot(N, L), 0.0) + 0.3;
 
-  gl_FragColor = vec4(ki * kd, 1);
+  if (ki > 0.3) {
+    ki = 1.0;
+  } else {
+    ki = 0.6;
+  }
+
+  gl_FragColor = vec4(clamp(ki * kd, 0.0, 1.0), 1);
 }
 </script>
 
