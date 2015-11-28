@@ -1,8 +1,28 @@
+var edgesCheckbox;
+var blurCheckbox;
+var blurCheckbos;
+var canvas;
+
+function initHtml() {
+  edgesCheckbox = document.getElementById('edges');
+  blurCheckbox = document.getElementById('blur');
+  waterCheckbox = document.getElementById('water');
+
+  canvas = document.getElementById('window');
+  canvas.onclick = function() {
+    canvas.requestPointerLock();
+  };
+
+  document.onkeydown = keyDown;
+  document.onkeyup = keyUp;
+  document.addEventListener('mousemove', mouseMove, false);
+  document.addEventListener('wheel', scroll);
+}
+
 var gl;
 var ratio;
 
 function initGL() {
-  var canvas = document.getElementById('window');
   gl = canvas.getContext('webgl');
   ratio = gl.drawingBufferWidth / gl.drawingBufferHeight;
 }
@@ -21,7 +41,11 @@ function createShader(name) {
   var shader = gl.createShader(type);
   gl.shaderSource(shader, shaderString);
   gl.compileShader(shader);
-  console.log(gl.getShaderInfoLog(shader));
+
+  var check = gl.getShaderInfoLog(shader);
+  if (check) {
+    console.log(name + ': ' + check);
+  }
 
   return shader;
 }
@@ -34,7 +58,11 @@ function createProgram(name, properties) {
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
   gl.linkProgram(program);
-  console.log(gl.getProgramInfoLog(program));
+
+  var check = gl.getProgramInfoLog(program);
+  if (check) {
+    console.log(name + ': ' + check);
+  }
 
   properties.forEach(function (property) {
     if (property[0] == 'u') {
@@ -90,6 +118,8 @@ function initPrograms() {
     'uP',
     'uLightDir',
     'uTexture',
+    'uFrame',
+    'uIsWater',
   ]);
 }
 
@@ -140,9 +170,16 @@ function genRect() {
   };
 }
 
+function waterHeight(x, z) {
+  var dist = vec2.length([x, z]);
+  var height = 0.1 * Math.sin(20 * dist / (2 * Math.PI) + frame / 100);
+
+  return height;
+}
+
 function genWater() {
-  var size = 10;
-  var density = 100;
+  var size = 100;
+  var density = 200;
   var width = size / density;
   var half = width / 2;
 
@@ -161,15 +198,6 @@ function genWater() {
         (i + 1) * width, 0, (j + 1) * width
       );
     }
-  }
-
-  for (var i = 0; i < verts.length; i += 3) {
-    var x = verts[i];
-    var z = verts[i + 2];
-    var dist = vec2.length([x, z]);
-    var height = 0.1 * Math.sin(20 * dist / (2 * Math.PI) + frame / 100);
-
-    verts[i + 1] = height;
   }
 
   for (var i = 0; i < 2 * density; i++) {
@@ -524,11 +552,12 @@ function drawScene() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   mat4.identity(M);
-  mat4.translate(M, M, [0, -0.5, 0]);
-  mat4.rotateX(M, M, Math.PI / 10);
-  mat4.rotateY(M, M, frame * 0.001);
+
+  var cameraPos = [0, 0, 0];
+  vec3.add(cameraPos, camera.pos, [boat.pos[0], 0, boat.pos[2]]);
 
   mat4.identity(V);
+  mat4.lookAt(V, cameraPos, boat.pos, [0, 1, 0]);
 
   var modelView = mat4.create();
   mat4.multiply(modelView, V, M);
@@ -540,8 +569,13 @@ function drawScene() {
   gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
   gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
   gl.uniformMatrix4fv(sceneProgram.uP, false, perspProj);
-  //gl.uniform3fv(sceneProgram.uLightDir, [-0.5, -1, 0]);
-  gl.uniform3fv(sceneProgram.uLightDir, [-0.5, 3, 0]);
+  gl.uniform1i(sceneProgram.uFrame, frame);
+  gl.uniform1i(sceneProgram.uIsWater, true);
+
+  var lightDir = [0, -1, -0.5, 0];
+  vec4.transformMat4(lightDir, lightDir, V);
+  lightDir = [lightDir[0], lightDir[1], lightDir[2]]
+  gl.uniform3fv(sceneProgram.uLightDir, lightDir);
 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
@@ -562,12 +596,11 @@ function drawScene() {
   gl.drawArrays(gl.TRIANGLES, 0, waterBuffer.numItems);
 
   mat4.identity(M);
-  mat4.translate(M, M, [0, -0.1, -1.5]);
+  mat4.translate(M, M, boat.pos);
+  mat4.rotateY(M, M, boat.direction);
+  mat4.rotateX(M, M, -boat.pitch);
+  mat4.translate(M, M, [0, 0, boat.offset]);
   mat4.scale(M, M, [0.002, 0.002, 0.002]);
-  mat4.rotateX(M, M, 0.5);
-  mat4.rotateY(M, M, frame * 0.01);
-
-  mat4.identity(V);
 
   var modelView = mat4.create();
   mat4.multiply(modelView, V, M);
@@ -578,6 +611,7 @@ function drawScene() {
 
   gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
   gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
+  gl.uniform1i(sceneProgram.uIsWater, false);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
   gl.enableVertexAttribArray(sceneProgram.aPos);
@@ -607,8 +641,10 @@ function drawScene() {
 
 var frame = 0;
 
-function draw() {
+function draw(e) {
   requestAnimationFrame(draw);
+
+  tick();
 
   drawVoronoi();
   if (edgesCheckbox.checked) {
@@ -627,22 +663,67 @@ function draw() {
   frame++;
 }
 
-var edgesCheckbox;
-var blurCheckbox;
-var blurCheckbos;
+var camera = {
+  pos: [0, 1, -2],
+  direction: 0,
+  height: Math.PI / 4,
+  distance: 2,
+  zoom: 0.2,
+}
 
-function initHtml() {
-  edgesCheckbox = document.getElementById('edges');
-  blurCheckbox = document.getElementById('blur');
-  waterCheckbox = document.getElementById('water');
+var boat = {
+  pos: [0, 0, 0],
+  direction: 0,
+  velocity: [0, 0, 0],
+  acceleration: 0.003,
+  offset: 0.15,
+  pitch: 0,
+}
+
+function tick() {
+  if (keys['up']) {
+    var force = [Math.sin(boat.direction), 0, Math.cos(boat.direction)];
+    vec3.scale(force, force, boat.acceleration);
+    vec3.add(boat.velocity, boat.velocity, force);
+  }
+  if (keys['down']) {
+    var force = [Math.sin(boat.direction), 0, Math.cos(boat.direction)];
+    vec3.scale(force, force, -boat.acceleration);
+    vec3.add(boat.velocity, boat.velocity, force);
+  }
+  if (keys['left']) {
+    boat.direction += 0.04;
+  }
+  if (keys['right']) {
+    boat.direction -= 0.04;
+  }
+
+  vec3.scale(boat.velocity, boat.velocity, Math.min(24 * Math.pow(vec3.length(boat.velocity), 0.7), 0.95));
+  vec3.add(boat.pos, boat.pos, boat.velocity);
+
+  var offsetPos = [Math.sin(boat.direction), 0, Math.cos(boat.direction)];
+  vec3.scale(offsetPos, offsetPos, -boat.offset);
+  vec3.add(offsetPos, offsetPos, boat.pos);
+
+  var frontHeight = waterHeight(boat.pos[2], boat.pos[0])
+  var backHeight = waterHeight(offsetPos[2], offsetPos[0])
+  boat.pos[1] = 0.03 + backHeight;
+
+  var front = [0.1, frontHeight];
+  var back = [0, backHeight];
+  boat.pitch = Math.atan2(frontHeight - backHeight, boat.offset);
+
+  camera.pos[1] = camera.distance * Math.cos(camera.height);
+  camera.pos[0] = camera.distance * Math.cos(camera.direction) * Math.sin(camera.height);
+  camera.pos[2] = camera.distance * Math.sin(camera.direction) * Math.sin(camera.height);
 }
 
 function main() {
+  initHtml();
   initGL();
   initPrograms();
   initBuffers();
   initRegions();
-  initHtml();
 
   mat4.perspective(perspProj, Math.PI / 4, ratio, 0.1, 100);
 
@@ -655,3 +736,46 @@ function main() {
 var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
   main();
 });
+
+function mouseMove(e) {
+  var dx = e.movementX;
+  var dy = e.movementY;
+
+  camera.direction += 2 * Math.PI * dx / gl.drawingBufferWidth;
+  camera.height -= Math.PI / 2 * dy / gl.drawingBufferHeight;
+  camera.height = Math.min(Math.max(camera.height, 0.01), Math.PI / 2 - 0.1);
+}
+
+function scroll(e) {
+  if (e.wheelDelta > 0) {
+    camera.distance -= camera.zoom;
+  } else if (e.wheelDelta < 0) {
+    camera.distance += camera.zoom;
+  }
+}
+
+var keys = {};
+
+function mapKey(keyCode) {
+  var key = String.fromCharCode(keyCode);
+
+  if (keyCode == 37 || key == 'A') {
+    key = 'left';
+  } else if (keyCode == 38 || key == 'W') {
+    key = 'up';
+  } else if (keyCode == 39 || key == 'D') {
+    key = 'right';
+  } else if (keyCode == 40 || key == 'S') {
+    key = 'down';
+  }
+
+  return key;
+}
+
+function keyDown(e) {
+  keys[mapKey(e.keyCode)] = true;
+}
+
+function keyUp(e) {
+  keys[mapKey(e.keyCode)] = false;
+}
