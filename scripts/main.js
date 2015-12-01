@@ -24,6 +24,7 @@ var ratio;
 
 function initGL() {
   gl = canvas.getContext('webgl');
+
   ratio = gl.drawingBufferWidth / gl.drawingBufferHeight;
 }
 
@@ -109,6 +110,19 @@ function initPrograms() {
     'uTexture',
   ]);
 
+  shadowProgram = createProgram('shadow', [
+    'uM',
+    'uV',
+    'uP',
+    'aPos',
+  ]);
+
+  testProgram = createProgram('test', [
+    'aPos',
+    'aTexCoord',
+    'uTexture',
+  ]);
+
   sceneProgram = createProgram('scene', [
     'aPos',
     'aNorm',
@@ -116,7 +130,11 @@ function initPrograms() {
     'uModelView',
     'uNormalMatrix',
     'uP',
+    'uBias',
+    'uLightV',
+    'uLightP',
     'uLightDir',
+    'uShadowMap',
     'uTexture',
     'uFrame',
     'uIsWater',
@@ -127,7 +145,7 @@ function genCone() {
   verts = [];
   verts.push(0, 0, -2)
 
-  var r = 2 * ratio;
+  var r = 2;
   var numVerts = 8;
   for (var i = 0; i < numVerts + 1; i++) {
     var theta = i * 2 * Math.PI / numVerts;
@@ -229,7 +247,7 @@ function genObj(object) {
   var textures = {};
 
   for (var key in object.textures) {
-    textures[key] = createTexture(null, null, object.textures[key]);
+    textures[key] = createTexture({ image: object.textures[key], clampToEdge: true });
   }
 
   return {
@@ -242,51 +260,49 @@ function genObj(object) {
   }
 }
 
-function createTexture(width, height, image) {
+function createTexture(options) {
   var texture = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  if (image) {
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+  if (options.clampToEdge) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+  }
+  if (options.image) {
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, options.image);
   } else {
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, options.width, options.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
   }
   gl.bindTexture(gl.TEXTURE_2D, null);
 
   return texture;
 }
 
-function createRenderBuffer(width, height) {
+function createRenderBuffer(options) {
   var renderBuffer = gl.createRenderbuffer();
   gl.bindRenderbuffer(gl.RENDERBUFFER, renderBuffer);
-  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+  gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, options.width, options.height);
   gl.bindRenderbuffer(gl.RENDERBUFFER, null);
 
   return renderBuffer;
 }
 
-function createFrameBuffer(width, height) {
-  var texture = createTexture(width, height);
-  var renderBuffer = createRenderBuffer(width, height);
+function createFrameBuffer(options) {
+  var texture = createTexture(options);
+  var renderBuffer = createRenderBuffer(options);
   var buffer = gl.createFramebuffer();
   gl.bindFramebuffer(gl.FRAMEBUFFER, buffer);
-  if (false) {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, 0x8ce1, gl.TEXTURE_2D, texture, 0);
-  } else {
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-  }
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, renderBuffer);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
   return {
     texture: texture,
     buffer: buffer,
-    width: width,
-    height: height,
+    width: options.width,
+    height: options.height,
   }
 }
 
@@ -354,11 +370,12 @@ function initBuffers() {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  voronoiFrame = createFrameBuffer(1024, 1024);
-  edgesFrame = createFrameBuffer(1024, 1024);
-  horizontalBlurFrame = createFrameBuffer(1024, 1024);
-  blurFrame = createFrameBuffer(1024, 1024);
-  waterFrame = createFrameBuffer(1024, 1024);
+  voronoiFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  edgesFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  horizontalBlurFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  blurFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  waterFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  shadowFrame = createFrameBuffer({ width: 1024, height: 1024, clampToEdge: true });
 }
 
 var regions = [];
@@ -546,9 +563,72 @@ function drawWater() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
+var lightV = mat4.create();
+var lightP = mat4.create();
+
+function drawShadow() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, shadowFrame.buffer);
+  gl.useProgram(shadowProgram);
+  gl.viewport(0, 0, shadowFrame.width, shadowFrame.height);
+  gl.clearColor(1, 1, 1, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  var center = vec3.create();
+  vec3.add(center, boat.pos, [0, 0.5, 0]);
+  mat4.lookAt(lightV, light.pos, center, [0, 1, 0]);
+  mat4.ortho(lightP, -1, 1, -1, 1, 0, 2 * light.dist);
+
+  mat4.identity(M);
+  mat4.translate(M, M, boat.pos);
+  mat4.rotateY(M, M, boat.direction);
+  mat4.rotateX(M, M, -boat.pitch);
+  mat4.translate(M, M, [0, 0, boat.offset]);
+  mat4.scale(M, M, [0.002, 0.002, 0.002]);
+
+  gl.uniformMatrix4fv(shadowProgram.uM, false, M);
+  gl.uniformMatrix4fv(shadowProgram.uV, false, lightV);
+  gl.uniformMatrix4fv(shadowProgram.uP, false, lightP);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
+  gl.enableVertexAttribArray(shadowProgram.aPos);
+  gl.vertexAttribPointer(shadowProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, link.numItems);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+function drawTest() {
+  gl.useProgram(testProgram);
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.clearColor(1, 1, 1, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, shadowFrame.texture);
+  gl.uniform1i(testProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(testProgram.aPos);
+  gl.vertexAttribPointer(testProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(testProgram.aTexCoord);
+  gl.vertexAttribPointer(testProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
 function drawScene() {
   gl.useProgram(sceneProgram);
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.clearColor(0.2, 0.8, 1, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   mat4.identity(M);
@@ -556,8 +636,9 @@ function drawScene() {
   var cameraPos = [0, 0, 0];
   vec3.add(cameraPos, camera.pos, [boat.pos[0], 0, boat.pos[2]]);
 
-  mat4.identity(V);
-  mat4.lookAt(V, cameraPos, boat.pos, [0, 1, 0]);
+  var center = vec3.create();
+  vec3.add(center, boat.pos, [0, 0.3, 0]);
+  mat4.lookAt(V, cameraPos, center, [0, 1, 0]);
 
   var modelView = mat4.create();
   mat4.multiply(modelView, V, M);
@@ -566,13 +647,26 @@ function drawScene() {
   mat4.invert(normalMatrix, modelView);
   mat4.transpose(normalMatrix, normalMatrix);
 
+  var bias = [
+    0.5,   0,   0, 0,
+      0, 0.5,   0, 0,
+      0,   0, 0.5, 0,
+    0.5, 0.5, 0.5, 1
+  ];
+
+  gl.uniformMatrix4fv(sceneProgram.uBias, false, bias);
+  gl.uniformMatrix4fv(sceneProgram.uLightV, false, lightV);
+  gl.uniformMatrix4fv(sceneProgram.uLightP, false, lightP);
   gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
   gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
   gl.uniformMatrix4fv(sceneProgram.uP, false, perspProj);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, shadowFrame.texture);
+  gl.uniform1i(sceneProgram.uShadowMap, 1);
   gl.uniform1i(sceneProgram.uFrame, frame);
   gl.uniform1i(sceneProgram.uIsWater, true);
 
-  var lightDir = [0, -1, -0.5, 0];
+  var lightDir = [light.dir[0], light.dir[1], light.dir[2], 0];
   vec4.transformMat4(lightDir, lightDir, V);
   lightDir = [lightDir[0], lightDir[1], lightDir[2]]
   gl.uniform3fv(sceneProgram.uLightDir, lightDir);
@@ -644,8 +738,6 @@ var frame = 0;
 function draw(e) {
   requestAnimationFrame(draw);
 
-  tick();
-
   drawVoronoi();
   if (edgesCheckbox.checked) {
     drawEdges();
@@ -658,9 +750,9 @@ function draw(e) {
     drawWater();
   }
 
+  drawShadow();
+  //drawTest();
   drawScene();
-
-  frame++;
 }
 
 var camera = {
@@ -669,7 +761,7 @@ var camera = {
   height: Math.PI / 4,
   distance: 2,
   zoom: 0.2,
-}
+};
 
 var boat = {
   pos: [0, 0, 0],
@@ -678,7 +770,13 @@ var boat = {
   acceleration: 0.003,
   offset: 0.15,
   pitch: 0,
-}
+};
+
+var light = {
+  dir: [0, -1, 0],
+  pos: [0, 2.5, 0],
+  dist: 1.5,
+};
 
 function tick() {
   if (keys['up']) {
@@ -716,6 +814,13 @@ function tick() {
   camera.pos[1] = camera.distance * Math.cos(camera.height);
   camera.pos[0] = camera.distance * Math.cos(camera.direction) * Math.sin(camera.height);
   camera.pos[2] = camera.distance * Math.sin(camera.direction) * Math.sin(camera.height);
+
+  light.dir = [Math.sin(frame / 600), -Math.abs(Math.cos(frame / 600)), 0];
+
+  vec3.scale(light.pos, light.dir, -light.dist);
+  vec3.add(light.pos, light.pos, boat.pos);
+
+  frame++;
 }
 
 function main() {
@@ -727,10 +832,11 @@ function main() {
 
   mat4.perspective(perspProj, Math.PI / 4, ratio, 0.1, 100);
 
-  gl.clearColor(0.2, 0.8, 1, 1.0);
   gl.enable(gl.DEPTH_TEST);
 
   draw();
+
+  setInterval(tick, 16);
 }
 
 var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
