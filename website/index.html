@@ -133,6 +133,47 @@ void main() {
 }
 </script>
 
+<script id="shadow-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+
+uniform mat4 uM;
+uniform mat4 uV;
+uniform mat4 uP;
+
+void main() {
+  gl_Position = uP * uV * uM * vec4(aPos, 1);
+}
+</script>
+<script id="shadow-fs" type="x-shader/x-fragment">
+precision highp float;
+
+void main() {
+  gl_FragColor = vec4(gl_FragCoord.z);
+}
+</script>
+
+<script id="test-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+</script>
+<script id="test-fs" type="x-shader/x-fragment">
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+void main() {
+  gl_FragColor = texture2D(uTexture, vTexCoord);
+}
+</script>
+
 <script id="scene-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
 attribute vec3 aNorm;
@@ -141,12 +182,16 @@ attribute vec2 aTexCoord;
 uniform mat4 uModelView;
 uniform mat4 uNormalMatrix;
 uniform mat4 uP;
+uniform mat4 uBias;
+uniform mat4 uLightV;
+uniform mat4 uLightP;
 uniform int  uFrame;
 uniform bool uIsWater;
 
 varying highp vec3 vPos;
 varying highp vec3 vNorm;
 varying highp vec2 vTexCoord;
+varying highp vec4 vShadowCoord;
 
 #define M_PI 3.1415926535897932384626433832795
 
@@ -162,6 +207,7 @@ void main() {
   vPos = vec3(uModelView * vec4(pos, 1));
   vNorm = vec3(uNormalMatrix * vec4(aNorm, 1));
   vTexCoord = aTexCoord;
+  vShadowCoord = uBias * uLightP * uLightV * vec4(pos, 1);
 }
 </script>
 <script id="scene-fs" type="x-shader/x-fragment">
@@ -170,8 +216,10 @@ precision highp float;
 varying highp vec3 vPos;
 varying highp vec3 vNorm;
 varying highp vec2 vTexCoord;
+varying highp vec4 vShadowCoord;
 
 uniform vec3 uLightDir;
+uniform sampler2D uShadowMap;
 uniform sampler2D uTexture;
 
 void main() {
@@ -184,11 +232,18 @@ void main() {
 
   float ki = 0.7 * max(dot(N, L), 0.0) + 0.3;
 
-  if (ki > 0.3) {
-    ki = 1.0;
-  } else {
+  float shadow = texture2D(uShadowMap, vShadowCoord.xy).z;
+
+  if (shadow != 1.0 && shadow < vShadowCoord.z) {
     ki = 0.6;
+  } else {
+    if (ki > 0.3) {
+      ki = 1.0;
+    } else {
+      ki = 0.6;
+    }
   }
+
 
   gl_FragColor = vec4(clamp(ki * kd, 0.0, 1.0), 1);
 }
