@@ -457,7 +457,7 @@ function initBuffers() {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  perlinFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  perlinFrame = createFrameBuffer({ width: 2048, height: 2048 });
   voronoiFrame = createFrameBuffer({ width: 2048, height: 2048 });
   edgesFrame = createFrameBuffer({ width: 2048, height: 2048 });
   horizontalBlurFrame = createFrameBuffer({ width: 2048, height: 2048 });
