@@ -3,6 +3,61 @@
   	<link rel="stylesheet" type="text/css" href="css/style.css" />
     <script type="text/javascript" src="scripts/lib/gl-matrix.js"></script>
 
+<script id="perlin-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+
+void main() {
+  gl_Position = vec4(aPos, 1);
+}
+</script>
+<script id="perlin-fs" type="x-shader/x-fragment">
+precision highp float;
+
+// Returns a random float in the range -1 to 1
+float rand(vec2 co){
+  return 2.0 * fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453) - 1.0;
+}
+
+float fade(float t) {
+  return t*t*t*(t*(t*6.0-15.0)+10.0);
+}
+
+float perlin(vec2 P) {
+  vec2 p = fract(P);
+  vec2 zone = floor(P);
+
+  vec2 g00 = vec2(rand(zone + vec2(0, 0)), rand(zone + vec2(1, 1)));
+  vec2 g01 = vec2(rand(zone + vec2(0, 1)), rand(zone + vec2(1, 2)));
+  vec2 g10 = vec2(rand(zone + vec2(1, 0)), rand(zone + vec2(2, 1)));
+  vec2 g11 = vec2(rand(zone + vec2(1, 1)), rand(zone + vec2(2, 2)));
+
+  vec2 s00 = p;
+  vec2 s01 = p - vec2(0.0, 1.0);
+  vec2 s10 = p - vec2(1.0, 0.0);
+  vec2 s11 = p - vec2(1.0, 1.0);
+
+  float q00 = dot(g00, s00);
+  float q01 = dot(g01, s01);
+  float q10 = dot(g10, s10);
+  float q11 = dot(g11, s11);
+
+  vec2 x = mix(vec2(q00, q01), vec2(q10, q11), fade(p.x));
+  float xy = mix(x.x, x.y, fade(p.y));
+
+  return xy;
+}
+
+void main() {
+  float sum = 0.0;
+
+  for (int i = 0; i < 3; i++) {
+    sum += perlin(pow(2.0, float(i)) * gl_FragCoord.xy / 128.0);
+  }
+
+  gl_FragColor = vec4(vec3(sum) / 2.0 + 0.5, 1);
+}
+</script>
+
 <script id="voronoi-vs" type="x-shader/x-vertex">
 attribute vec3 aPos;
 
@@ -86,8 +141,8 @@ uniform vec2 uDir;
 uniform sampler2D uTexture;
 
 void main() {
-  float blur = 15.0;
-  const int kernel = 5;
+  float blur = 30.0;
+  const int kernel = 15;
 
   float hstep = blur * uDir.x / float(uWidth) / float(2 * kernel + 1);
   float vstep = blur * uDir.y / float(uHeight) / float(2 * kernel + 1);
@@ -123,9 +178,9 @@ uniform sampler2D uTexture;
 void main() {
   vec3 colour = texture2D(uTexture, vTexCoord).rgb;
   vec3 blue = vec3(0.0, 0.56, 1.0);
-  float waves = 0.3;
+  float waves = 0.5;
 
-  if (length(colour) > 0.1) {
+  if (length(colour) > 0.03) {
     gl_FragColor = vec4((1.0 - waves) * blue + waves * vec3(1), 1);
   } else {
     gl_FragColor = vec4(blue, 1);
@@ -179,14 +234,18 @@ attribute vec3 aPos;
 attribute vec3 aNorm;
 attribute vec2 aTexCoord;
 
-uniform mat4 uModelView;
-uniform mat4 uNormalMatrix;
-uniform mat4 uP;
-uniform mat4 uBias;
-uniform mat4 uLightV;
-uniform mat4 uLightP;
-uniform int  uFrame;
-uniform bool uIsWater;
+uniform mat4  uModelView;
+uniform mat4  uNormalMatrix;
+uniform mat4  uP;
+uniform mat4  uBias;
+uniform mat4  uLightV;
+uniform mat4  uLightP;
+uniform vec3  uBoatPos;
+uniform float uTexScale;
+uniform int   uFrame;
+uniform bool  uIsWater;
+uniform bool  uIsIsland;
+uniform sampler2D uIslandHeight;
 
 varying highp vec3 vPos;
 varying highp vec3 vNorm;
@@ -195,19 +254,36 @@ varying highp vec4 vShadowCoord;
 
 #define M_PI 3.1415926535897932384626433832795
 
+float islandHeight(vec2 p) {
+  return texture2D(uIslandHeight, p).g * 8.0 - 5.0;
+}
+
 void main() {
   vec3 pos = aPos;
+  vec3 norm = aNorm;
+  vec2 texCoord = aTexCoord;
+
   if (uIsWater) {
-    float dist = length(vec2(pos.x, pos.z));
-    pos.y = 0.1 * sin(20.0 * dist / (2.0 * M_PI) + float(uFrame) / 100.0);
+    pos.xz += uBoatPos.xz;
+    texCoord += uBoatPos.xz / uTexScale;
+    pos.y = 0.2 * sin(pos.x) * sin(pos.z + float(uFrame) / 100.0);
   }
 
-  gl_Position = uP * uModelView * vec4(pos, 1);
+  if (uIsIsland) {
+    pos.y = islandHeight(texCoord);
+    float left = islandHeight(texCoord + vec2(-0.0001, 0));
+    float right = islandHeight(texCoord + vec2(0.0001, 0));
+    float forward = islandHeight(texCoord + vec2(0, -0.0001));
+    float backward = islandHeight(texCoord + vec2(0, 0.0001));
+    norm = vec3(0, 1, 0) + normalize(cross(vec3(0, backward - forward, 0.0002), vec3(0.0002, right - left, 0)));
+  }
 
   vPos = vec3(uModelView * vec4(pos, 1));
-  vNorm = vec3(uNormalMatrix * vec4(aNorm, 1));
-  vTexCoord = aTexCoord;
+  vNorm = vec3(uNormalMatrix * vec4(norm, 1));
+  vTexCoord = texCoord;
   vShadowCoord = uBias * uLightP * uLightV * vec4(pos, 1);
+
+  gl_Position = uP * uModelView * vec4(pos, 1);
 }
 </script>
 <script id="scene-fs" type="x-shader/x-fragment">
@@ -221,6 +297,9 @@ varying highp vec4 vShadowCoord;
 uniform vec3 uLightDir;
 uniform sampler2D uShadowMap;
 uniform sampler2D uTexture;
+uniform sampler2D uIslandTexture;
+uniform bool uIsWater;
+uniform bool uIsIsland;
 
 void main() {
   vec3 kd = texture2D(uTexture, vTexCoord).rgb;
@@ -228,7 +307,7 @@ void main() {
   vec3 E = normalize(-vPos);
   vec3 L = normalize(-uLightDir);
   vec3 N = normalize(vNorm);
-  vec3 up = normalize(vec3(0, 1, 0));
+  vec3 UP = normalize(vec3(0, 1, 0));
 
   float ki = 0.7 * max(dot(N, L), 0.0) + 0.3;
 
@@ -243,9 +322,25 @@ void main() {
       ki = 0.6;
     }
   }
+  vec3 diffuse = ki * kd;
 
+  vec3 rim = vec3(0);
+  if (!uIsWater) {
+    float rimi = pow(1.0 - clamp(dot(N, E) + 0.3, 0.0, 1.0), 3.0);
+    vec3 rimd = vec3(0.2, 0.7, 1.0);
+    rim = rimi * rimd;
+  }
 
-  gl_FragColor = vec4(clamp(ki * kd, 0.0, 1.0), 1);
+  if (uIsIsland) {
+    float fade = (1.0 - kd.r) * 2.5 + 0.1;
+    vec3 isld = texture2D(uIslandTexture, vec2(fade, 0)).rgb;
+    diffuse = ki * isld;
+  }
+
+  vec3 colour = diffuse + rim;
+  colour = clamp(colour, 0.0, 1.0);
+
+  gl_FragColor = vec4(colour, 1);
 }
 </script>
 
@@ -259,11 +354,14 @@ void main() {
         <label for="blur">Blur</label>
         <input type="checkbox" checked id="water" name="water" />
         <label for="water">Water Colouring</label>
+        <input type="checkbox" id="mute" name="mute" />
+        <label for="mute">Mute</label>
       </form>
     </div>
   	<div class="canvasContainer">
   	  <canvas id="window" width="1280" height="720"></canvas>
     </div>
+    <audio id="oceanTheme" preload="auto" loop src="assets/sounds/ocean.mp3"></audio>
 
     <script type="text/javascript" src="scripts/objParser.js"></script>
     <script type="text/javascript" src="scripts/main.js"></script>

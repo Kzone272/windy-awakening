@@ -2,11 +2,19 @@ var edgesCheckbox;
 var blurCheckbox;
 var blurCheckbos;
 var canvas;
+var oceanTheme;
 
 function initHtml() {
   edgesCheckbox = document.getElementById('edges');
   blurCheckbox = document.getElementById('blur');
   waterCheckbox = document.getElementById('water');
+  muteCheckbox = document.getElementById('mute');
+
+  oceanTheme = document.getElementById('oceanTheme');
+
+  muteCheckbox.addEventListener('change', function(event) {
+    oceanTheme.muted = muteCheckbox.checked;
+  })
 
   canvas = document.getElementById('window');
   canvas.onclick = function() {
@@ -80,6 +88,10 @@ var voronoiProgram;
 var blurProgram;
 
 function initPrograms() {
+  perlinProgram = createProgram('perlin', [
+    'aPos',
+  ]);
+
   voronoiProgram = createProgram('voronoi', [
     'aPos',
     'uM',
@@ -136,8 +148,13 @@ function initPrograms() {
     'uLightDir',
     'uShadowMap',
     'uTexture',
+    'uIslandTexture',
+    'uTexScale',
+    'uBoatPos',
     'uFrame',
     'uIsWater',
+    'uIsIsland',
+    'uIslandHeight',
   ]);
 }
 
@@ -189,13 +206,60 @@ function genRect() {
 }
 
 function waterHeight(x, z) {
-  var dist = vec2.length([x, z]);
-  var height = 0.1 * Math.sin(20 * dist / (2 * Math.PI) + frame / 100);
-
-  return height;
+  return 0.2 * Math.sin(x) * Math.sin(z + frame / 100);
 }
 
 function genWater() {
+  var size = 50;
+  var density = 100;
+  var width = size / density;
+  var half = width / 2;
+  var texScale = 4;
+
+  var verts = [];
+  var normals = [];
+  var texCoords = [];
+
+  for (var i = -density; i < density; i++) {
+    for (var j = -density; j < density; j++) {
+      verts.push(
+              i * width, 0,       j * width,
+        (i + 1) * width, 0,       j * width,
+              i * width, 0, (j + 1) * width,
+              i * width, 0, (j + 1) * width,
+        (i + 1) * width, 0,       j * width,
+        (i + 1) * width, 0, (j + 1) * width
+      );
+    }
+  }
+
+  for (var i = 0; i < 2 * density; i++) {
+    for (var j = 0; j < 2 * density; j++) {
+      texCoords.push(
+              i * width / texScale,       j * width / texScale,
+        (i + 1) * width / texScale,       j * width / texScale,
+              i * width / texScale, (j + 1) * width / texScale,
+              i * width / texScale, (j + 1) * width / texScale,
+        (i + 1) * width / texScale,       j * width / texScale,
+        (i + 1) * width / texScale, (j + 1) * width / texScale
+      );
+    }
+  }
+
+  for (var i = 0; i < verts.length; i += 3) {
+    normals.push(0, 1, 0);
+  }
+
+  return {
+    verts: new Float32Array(verts),
+    normals: new Float32Array(normals),
+    texCoords: new Float32Array(texCoords),
+    numItems:  6 * (2 * density) * (2 * density),
+    texScale:  texScale,
+  };
+}
+
+function genIsland() {
   var size = 100;
   var density = 200;
   var width = size / density;
@@ -221,12 +285,12 @@ function genWater() {
   for (var i = 0; i < 2 * density; i++) {
     for (var j = 0; j < 2 * density; j++) {
       texCoords.push(
-              i * width,       j * width,
-        (i + 1) * width,       j * width,
-              i * width, (j + 1) * width,
-              i * width, (j + 1) * width,
-        (i + 1) * width,       j * width,
-        (i + 1) * width, (j + 1) * width
+              i / (2 * density),       j / (2 * density),
+        (i + 1) / (2 * density),       j / (2 * density),
+              i / (2 * density), (j + 1) / (2 * density),
+              i / (2 * density), (j + 1) / (2 * density),
+        (i + 1) / (2 * density),       j / (2 * density),
+        (i + 1) / (2 * density), (j + 1) / (2 * density)
       );
     }
   }
@@ -312,12 +376,17 @@ var rectTexBuffer;
 var waterBuffer;
 var waterNormBuffer;
 var waterTexBuffer;
+var islandBuffer;
+var islandNormBuffer;
+var islandTexBuffer;
 var link;
 var linkBuffer;
 var linkNormBuffer;
 var linkTexBuffer;
+var islandTexture;
 
 var lastFrame;
+var perlinFrame;
 var voronoiFrame;
 var edgesFrame;
 var horizontalBlurFrame;
@@ -346,6 +415,7 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, waterBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, water.verts, gl.STATIC_DRAW)
   waterBuffer.numItems = water.numItems;
+  waterBuffer.texScale = water.texScale;
 
   waterNormBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, waterNormBuffer);
@@ -354,6 +424,21 @@ function initBuffers() {
   waterTexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, water.texCoords, gl.STATIC_DRAW);
+
+  var island = genIsland();
+  islandBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, islandBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, island.verts, gl.STATIC_DRAW)
+  islandBuffer.numItems = island.numItems;
+  islandBuffer.texScale = island.texScale;
+
+  islandNormBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, islandNormBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, island.normals, gl.STATIC_DRAW);
+
+  islandTexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, islandTexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, island.texCoords, gl.STATIC_DRAW);
 
   link = genObj(toonLink);
   linkBuffer = gl.createBuffer();
@@ -368,24 +453,27 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, linkTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, link.texCoords, gl.STATIC_DRAW);
 
+  islandTexture = createTexture({ image: islandImage, clampToEdge: true });
+
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
-  voronoiFrame = createFrameBuffer({ width: 1024, height: 1024 });
-  edgesFrame = createFrameBuffer({ width: 1024, height: 1024 });
-  horizontalBlurFrame = createFrameBuffer({ width: 1024, height: 1024 });
-  blurFrame = createFrameBuffer({ width: 1024, height: 1024 });
-  waterFrame = createFrameBuffer({ width: 1024, height: 1024 });
-  shadowFrame = createFrameBuffer({ width: 1024, height: 1024, clampToEdge: true });
+  perlinFrame = createFrameBuffer({ width: 1024, height: 1024 });
+  voronoiFrame = createFrameBuffer({ width: 2048, height: 2048 });
+  edgesFrame = createFrameBuffer({ width: 2048, height: 2048 });
+  horizontalBlurFrame = createFrameBuffer({ width: 2048, height: 2048 });
+  blurFrame = createFrameBuffer({ width: 2048, height: 2048 });
+  waterFrame = createFrameBuffer({ width: 2048, height: 2048 });
+  shadowFrame = createFrameBuffer({ width: 2048, height: 2048, clampToEdge: true });
 }
 
 var regions = [];
 function initRegions() {
-  for (var i = 0; i < 30; i++) {
+  for (var i = 0; i < 20; i++) {
     regions.push({
       pos: [Math.random() * 2 - 1, Math.random() * 2 - 1, 0],
       colour: [Math.random(), Math.random(), Math.random()],
       dir: 2 * Math.PI * Math.random(),
-      speed: 0.001 * Math.random() + 0.001,
+      speed: 0.00025 * Math.random() + 0.00025,
     });
   }
 }
@@ -414,6 +502,23 @@ var V = mat4.create();
 var P = mat4.create();
 var orthoProj = mat4.create();
 var perspProj = mat4.create();
+
+function drawPerlin() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, perlinFrame.buffer);
+  gl.useProgram(perlinProgram);
+  gl.viewport(0, 0, perlinFrame.width, perlinFrame.height);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(perlinProgram.aPos);
+  gl.vertexAttribPointer(perlinProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
 
 function drawVoronoi() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, voronoiFrame.buffer);
@@ -445,8 +550,6 @@ function drawVoronoi() {
       gl.drawArrays(gl.TRIANGLE_FAN, 0, coneBuffer.numItems);
     }
   }
-
-  moveRegions();
 
   lastFrame = voronoiFrame;
 
@@ -607,7 +710,7 @@ function drawTest() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, shadowFrame.texture);
+  gl.bindTexture(gl.TEXTURE_2D, perlinFrame.texture);
   gl.uniform1i(testProgram.uTexture, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
@@ -637,7 +740,7 @@ function drawScene() {
   vec3.add(cameraPos, camera.pos, [boat.pos[0], 0, boat.pos[2]]);
 
   var center = vec3.create();
-  vec3.add(center, boat.pos, [0, 0.3, 0]);
+  vec3.add(center, boat.pos, [0, 0.2, 0]);
   mat4.lookAt(V, cameraPos, center, [0, 1, 0]);
 
   var modelView = mat4.create();
@@ -660,10 +763,17 @@ function drawScene() {
   gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
   gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
   gl.uniformMatrix4fv(sceneProgram.uP, false, perspProj);
+  gl.uniform1i(sceneProgram.uFrame, frame);
+  gl.uniform1f(sceneProgram.uTexScale, waterBuffer.texScale);
   gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, shadowFrame.texture);
   gl.uniform1i(sceneProgram.uShadowMap, 1);
-  gl.uniform1i(sceneProgram.uFrame, frame);
+  gl.activeTexture(gl.TEXTURE2);
+  gl.bindTexture(gl.TEXTURE_2D, perlinFrame.texture);
+  gl.uniform1i(sceneProgram.uIslandHeight, 2);
+  gl.activeTexture(gl.TEXTURE3);
+  gl.bindTexture(gl.TEXTURE_2D, islandTexture);
+  gl.uniform1i(sceneProgram.uIslandTexture, 3);
   gl.uniform1i(sceneProgram.uIsWater, true);
 
   var lightDir = [light.dir[0], light.dir[1], light.dir[2], 0];
@@ -688,6 +798,27 @@ function drawScene() {
   gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
   gl.drawArrays(gl.TRIANGLES, 0, waterBuffer.numItems);
+  gl.uniform1i(sceneProgram.uIsWater, false);
+
+  gl.uniform1i(sceneProgram.uIsIsland, true);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, perlinFrame.texture);
+  gl.uniform1i(sceneProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, islandBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aPos);
+  gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, islandNormBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aNorm);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, islandTexBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aTexCoord);
+  gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, islandBuffer.numItems);
+  gl.uniform1i(sceneProgram.uIsIsland, false);
 
   mat4.identity(M);
   mat4.translate(M, M, boat.pos);
@@ -705,7 +836,7 @@ function drawScene() {
 
   gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
   gl.uniformMatrix4fv(sceneProgram.uNormalMatrix, false, normalMatrix);
-  gl.uniform1i(sceneProgram.uIsWater, false);
+  gl.uniform3fv(sceneProgram.uBoatPos, boat.pos);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, linkBuffer);
   gl.enableVertexAttribArray(sceneProgram.aPos);
@@ -751,8 +882,9 @@ function draw(e) {
   }
 
   drawShadow();
-  //drawTest();
   drawScene();
+
+  //drawTest();
 }
 
 var camera = {
@@ -760,7 +892,7 @@ var camera = {
   direction: 0,
   height: Math.PI / 4,
   distance: 2,
-  zoom: 0.2,
+  zoom: 0.1,
 };
 
 var boat = {
@@ -803,11 +935,11 @@ function tick() {
   vec3.scale(offsetPos, offsetPos, -boat.offset);
   vec3.add(offsetPos, offsetPos, boat.pos);
 
-  var frontHeight = waterHeight(boat.pos[2], boat.pos[0])
-  var backHeight = waterHeight(offsetPos[2], offsetPos[0])
+  var frontHeight = waterHeight(boat.pos[0], boat.pos[2])
+  var backHeight = waterHeight(offsetPos[0], offsetPos[2])
   boat.pos[1] = 0.03 + backHeight;
 
-  var front = [0.1, frontHeight];
+  var front = [boat.offset, frontHeight];
   var back = [0, backHeight];
   boat.pitch = Math.atan2(frontHeight - backHeight, boat.offset);
 
@@ -820,28 +952,10 @@ function tick() {
   vec3.scale(light.pos, light.dir, -light.dist);
   vec3.add(light.pos, light.pos, boat.pos);
 
+  moveRegions();
+
   frame++;
 }
-
-function main() {
-  initHtml();
-  initGL();
-  initPrograms();
-  initBuffers();
-  initRegions();
-
-  mat4.perspective(perspProj, Math.PI / 4, ratio, 0.1, 100);
-
-  gl.enable(gl.DEPTH_TEST);
-
-  draw();
-
-  setInterval(tick, 16);
-}
-
-var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
-  main();
-});
 
 function mouseMove(e) {
   var dx = e.movementX;
@@ -855,6 +969,7 @@ function mouseMove(e) {
 function scroll(e) {
   if (e.wheelDelta > 0) {
     camera.distance -= camera.zoom;
+    camera.distance = Math.max(camera.distance, 0.4);
   } else if (e.wheelDelta < 0) {
     camera.distance += camera.zoom;
   }
@@ -885,3 +1000,29 @@ function keyDown(e) {
 function keyUp(e) {
   keys[mapKey(e.keyCode)] = false;
 }
+
+function main() {
+  initHtml();
+  initGL();
+  initPrograms();
+  initBuffers();
+  initRegions();
+
+  mat4.perspective(perspProj, Math.PI / 4, ratio, 0.01, 50);
+
+  gl.enable(gl.DEPTH_TEST);
+
+  drawPerlin(); // We only need to draw this once
+  draw();
+
+  setInterval(tick, 1000 / 60);
+}
+
+var islandImage = new Image();
+var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
+  islandImage.onload = function () {
+    main();
+  }
+
+  islandImage.src = 'assets/textures/island.png';
+});

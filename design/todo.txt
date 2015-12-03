@@ -1,0 +1,5 @@
+- Voronoi region repulsion (maybe lloyd relaxation)
+- Seagulls
+- Smooth shadow mapped shadows
+- Shadow map packing
+- Turning Physics
