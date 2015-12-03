@@ -51,7 +51,7 @@ void main() {
   float sum = 0.0;
 
   for (int i = 0; i < 3; i++) {
-    sum += perlin(pow(2.0, float(i)) * gl_FragCoord.xy / 128.0);
+    sum += perlin(pow(2.0, float(i)) * gl_FragCoord.xy / 256.0);
   }
 
   gl_FragColor = vec4(vec3(sum) / 2.0 + 0.5, 1);
@@ -271,11 +271,11 @@ void main() {
 
   if (uIsIsland) {
     pos.y = islandHeight(texCoord);
-    float left = islandHeight(texCoord + vec2(-0.0001, 0));
-    float right = islandHeight(texCoord + vec2(0.0001, 0));
-    float forward = islandHeight(texCoord + vec2(0, -0.0001));
-    float backward = islandHeight(texCoord + vec2(0, 0.0001));
-    norm = vec3(0, 1, 0) + normalize(cross(vec3(0, backward - forward, 0.0002), vec3(0.0002, right - left, 0)));
+    float offset = 0.0025;
+    float xHeight = islandHeight(texCoord + vec2(offset, 0));
+    float zHeight = islandHeight(texCoord + vec2(0, offset));
+    float backward = islandHeight(texCoord + vec2(0, offset));
+    norm = vec3(0, 0.5, 0) + normalize(cross(vec3(0, zHeight - pos.y, offset), vec3(offset, xHeight - pos.y, 0)));
   }
 
   vPos = vec3(uModelView * vec4(pos, 1));
@@ -322,11 +322,13 @@ void main() {
       ki = 0.6;
     }
   }
+
   vec3 diffuse = ki * kd;
 
   vec3 rim = vec3(0);
   if (!uIsWater) {
-    float rimi = pow(1.0 - clamp(dot(N, E) + 0.3, 0.0, 1.0), 3.0);
+    float sharpness = 3.0;
+    float rimi = pow(1.0 - clamp(dot(N, E) + 0.3, 0.0, 1.0), sharpness);
     vec3 rimd = vec3(0.2, 0.7, 1.0);
     rim = rimi * rimd;
   }
