@@ -112,6 +112,7 @@ function initPrograms() {
     'aTexCoord',
     'uWidth',
     'uHeight',
+    'uBlurAmount',
     'uDir',
     'uTexture',
   ]);
@@ -146,9 +147,11 @@ function initPrograms() {
     'uLightV',
     'uLightP',
     'uLightDir',
+    'uViewLightDir',
     'uShadowMap',
     'uTexture',
     'uIslandTexture',
+    'uSunlightTexture',
     'uTexScale',
     'uBoatPos',
     'uFrame',
@@ -397,6 +400,7 @@ var linkBuffer;
 var linkNormBuffer;
 var linkTexBuffer;
 var islandTexture;
+var sunlightTexture;
 
 var lastFrame;
 var perlinFrame;
@@ -469,6 +473,7 @@ function initBuffers() {
   gl.bufferData(gl.ARRAY_BUFFER, link.texCoords, gl.STATIC_DRAW);
 
   islandTexture = createTexture({ image: islandImage, clampToEdge: true });
+  sunlightTexture = createTexture({ image: sunlightImage, clampToEdge: true });
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -604,7 +609,7 @@ function drawEdges() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-function drawBlur() {
+function drawBlur(blurAmount) {
   gl.bindFramebuffer(gl.FRAMEBUFFER, horizontalBlurFrame.buffer);
   gl.useProgram(blurProgram);
   gl.viewport(0, 0, horizontalBlurFrame.width, horizontalBlurFrame.height);
@@ -612,6 +617,7 @@ function drawBlur() {
 
   gl.uniform1i(blurProgram.uWidth, horizontalBlurFrame.height);
   gl.uniform1i(blurProgram.uHeight, horizontalBlurFrame.height);
+  gl.uniform1f(blurProgram.uBlurAmount, blurAmount);
   gl.uniform2fv(blurProgram.uDir, [1, 0]);
 
   gl.activeTexture(gl.TEXTURE0);
@@ -767,12 +773,16 @@ function drawScene() {
   gl.activeTexture(gl.TEXTURE3);
   gl.bindTexture(gl.TEXTURE_2D, islandTexture);
   gl.uniform1i(sceneProgram.uIslandTexture, 3);
+  gl.activeTexture(gl.TEXTURE4);
+  gl.bindTexture(gl.TEXTURE_2D, sunlightTexture);
+  gl.uniform1i(sceneProgram.uSunlightTexture, 4);
   gl.uniform1i(sceneProgram.uIsWater, true);
 
   var lightDir = [light.dir[0], light.dir[1], light.dir[2], 0];
   vec4.transformMat4(lightDir, lightDir, V);
   lightDir = [lightDir[0], lightDir[1], lightDir[2]]
-  gl.uniform3fv(sceneProgram.uLightDir, lightDir);
+  gl.uniform3fv(sceneProgram.uLightDir, light.dir);
+  gl.uniform3fv(sceneProgram.uViewLightDir, lightDir);
 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
@@ -862,21 +872,21 @@ function drawScene() {
 
 function drawCutoff() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, cutoffFrame.buffer);
-  gl.useProgram(waterProgram);
+  gl.useProgram(cutoffProgram);
   gl.viewport(0, 0, cutoffFrame.width, cutoffFrame.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
-  gl.uniform1i(waterProgram.uTexture, 0);
+  gl.uniform1i(cutoffProgram.uTexture, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
-  gl.enableVertexAttribArray(waterProgram.aPos);
-  gl.vertexAttribPointer(waterProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(cutoffProgram.aPos);
+  gl.vertexAttribPointer(cutoffProgram.aPos, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
-  gl.enableVertexAttribArray(waterProgram.aTexCoord);
-  gl.vertexAttribPointer(waterProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(cutoffProgram.aTexCoord);
+  gl.vertexAttribPointer(cutoffProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
   gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
 
@@ -888,25 +898,25 @@ function drawCutoff() {
 }
 
 function drawBloom() {
-  gl.useProgram(waterProgram);
+  gl.useProgram(bloomProgram);
   gl.viewport(0, 0, cutoffFrame.width, cutoffFrame.height);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, sceneFrame.texture);
-  gl.uniform1i(waterProgram.uTexture, 0);
+  gl.uniform1i(bloomProgram.uOriginal, 0);
 
   gl.activeTexture(gl.TEXTURE1);
   gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
-  gl.uniform1i(waterProgram.uShine, 1);
+  gl.uniform1i(bloomProgram.uShine, 1);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
-  gl.enableVertexAttribArray(waterProgram.aPos);
-  gl.vertexAttribPointer(waterProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(bloomProgram.aPos);
+  gl.vertexAttribPointer(bloomProgram.aPos, 3, gl.FLOAT, false, 0, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
-  gl.enableVertexAttribArray(waterProgram.aTexCoord);
-  gl.vertexAttribPointer(waterProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(bloomProgram.aTexCoord);
+  gl.vertexAttribPointer(bloomProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
   gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
 
@@ -922,7 +932,7 @@ function drawTest() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, cutoffFrame.texture);
+  gl.bindTexture(gl.TEXTURE_2D, sceneFrame.texture);
   gl.uniform1i(testProgram.uTexture, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
@@ -948,8 +958,8 @@ function draw(e) {
     drawEdges();
   }
   if (blurCheckbox.checked) {
-    drawBlur();
-    drawBlur();
+    drawBlur(30);
+    drawBlur(30);
   }
   if (waterCheckbox.checked) {
     drawWater();
@@ -958,11 +968,11 @@ function draw(e) {
   drawShadow();
   drawScene();
   drawCutoff();
-  //drawBlur();
-  //drawBlur();
-  //drawBloom();
+  drawBlur(100);
+  drawBlur(100);
+  drawBloom();
 
-  drawTest();
+  //drawTest();
 }
 
 var camera = {
@@ -983,28 +993,30 @@ var boat = {
 };
 
 var light = {
+  rotation: 0.0,
   dir: [0, -1, 0],
   pos: [0, 2.5, 0],
   dist: 1.5,
+  animating: true,
 };
 
 var frame = 0;
 
 function tick() {
-  if (keys['up']) {
+  if (keys.up) {
     var force = [Math.sin(boat.direction), 0, Math.cos(boat.direction)];
     vec3.scale(force, force, boat.acceleration);
     vec3.add(boat.velocity, boat.velocity, force);
   }
-  if (keys['down']) {
+  if (keys.down) {
     var force = [Math.sin(boat.direction), 0, Math.cos(boat.direction)];
     vec3.scale(force, force, -boat.acceleration);
     vec3.add(boat.velocity, boat.velocity, force);
   }
-  if (keys['left']) {
+  if (keys.left) {
     boat.direction += 0.04;
   }
-  if (keys['right']) {
+  if (keys.right) {
     boat.direction -= 0.04;
   }
 
@@ -1027,7 +1039,17 @@ function tick() {
   camera.pos[0] = camera.distance * Math.cos(camera.direction) * Math.sin(camera.height);
   camera.pos[2] = camera.distance * Math.sin(camera.direction) * Math.sin(camera.height);
 
-  light.dir = [Math.sin(frame / 600), -Math.abs(Math.cos(frame / 600)), 0];
+  if (keys.Q) {
+    light.rotation -= 0.01;
+  } else if (keys.E) {
+    light.rotation += 0.01;
+  }
+
+  if (light.animating) {
+    light.rotation += 0.005;
+  }
+
+  light.dir = [Math.cos(light.rotation), 2 * Math.pow(Math.sin(light.rotation / 2), 4) - 1, Math.sin(light.rotation)];
 
   vec3.scale(light.pos, light.dir, -light.dist);
   vec3.add(light.pos, light.pos, boat.pos);
@@ -1068,17 +1090,25 @@ function mapKey(keyCode) {
     key = 'right';
   } else if (keyCode == 40 || key == 'S') {
     key = 'down';
+  } else if (keyCode == 32) {
+    key = 'space';
   }
 
   return key;
 }
 
 function keyDown(e) {
-  keys[mapKey(e.keyCode)] = true;
+  var mapped = mapKey(e.keyCode);
+  keys[mapped] = true;
 }
 
 function keyUp(e) {
-  keys[mapKey(e.keyCode)] = false;
+  var mapped = mapKey(e.keyCode);
+  keys[mapped] = false;
+
+  if (mapped == 'space') {
+    light.animating = !light.animating;
+  }
 }
 
 function main() {
@@ -1099,10 +1129,13 @@ function main() {
 }
 
 var islandImage = new Image();
+var sunlightImage = new Image();
 var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
   islandImage.onload = function () {
-    main();
+    sunlightImage.onload = function () {
+      main();
+    }
+    sunlightImage.src = 'assets/textures/sunlight.png';
   }
-
   islandImage.src = 'assets/textures/island.png';
 });

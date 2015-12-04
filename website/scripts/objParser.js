@@ -106,7 +106,7 @@ function parseObj(name, done) {
         lastGroup.size = obj.verts.length / 3 - lastGroup.offset;
       }
 
-      parseMtl(name, done, obj);
+      done();
     }
   };
 

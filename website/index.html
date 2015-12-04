@@ -137,15 +137,15 @@ precision highp float;
 varying highp vec2 vTexCoord;
 uniform int uWidth;
 uniform int uHeight;
+uniform float uBlurAmount;
 uniform vec2 uDir;
 uniform sampler2D uTexture;
 
 void main() {
-  float blur = 30.0;
   const int kernel = 15;
 
-  float hstep = blur * uDir.x / float(uWidth) / float(2 * kernel + 1);
-  float vstep = blur * uDir.y / float(uHeight) / float(2 * kernel + 1);
+  float hstep = uBlurAmount * uDir.x / float(uWidth) / float(2 * kernel + 1);
+  float vstep = uBlurAmount * uDir.y / float(uHeight) / float(2 * kernel + 1);
 
   vec4 sum = vec4(0.0);
   for (int i = -kernel; i < kernel + 1; i++) {
@@ -203,7 +203,7 @@ void main() {
 precision highp float;
 
 void main() {
-  gl_FragColor = vec4(gl_FragCoord.z);
+  gl_FragColor = vec4(vec3(gl_FragCoord.z), 1);
 }
 </script>
 
@@ -295,9 +295,11 @@ varying highp vec2 vTexCoord;
 varying highp vec4 vShadowCoord;
 
 uniform vec3 uLightDir;
+uniform vec3 uViewLightDir;
 uniform sampler2D uShadowMap;
 uniform sampler2D uTexture;
 uniform sampler2D uIslandTexture;
+uniform sampler2D uSunlightTexture;
 uniform bool uIsWater;
 uniform bool uIsIsland;
 
@@ -305,7 +307,7 @@ void main() {
   vec3 kd = texture2D(uTexture, vTexCoord).rgb;
 
   vec3 E = normalize(-vPos);
-  vec3 L = normalize(-uLightDir);
+  vec3 L = normalize(-uViewLightDir);
   vec3 N = normalize(vNorm);
   vec3 UP = normalize(vec3(0, 1, 0));
 
@@ -313,13 +315,25 @@ void main() {
 
   float shadow = texture2D(uShadowMap, vShadowCoord.xy).z;
 
-  if (shadow != 1.0 && shadow < vShadowCoord.z) {
-    ki = 0.6;
+  vec3 sunlight = texture2D(uSunlightTexture, vec2(-uLightDir.y / 2.0 + 0.5, 0)).rgb;
+
+  float bright = 1.0;
+  float dark = 0.6;
+  float startFade = -0.4;
+  float endFade = -0.3;
+
+  if ((shadow != 1.0 && shadow < vShadowCoord.z) || uLightDir.y > endFade) {
+    ki = dark;
   } else {
+    float expected;
     if (ki > 0.3) {
-      ki = 1.0;
+      if (uLightDir.y < endFade) {
+        ki = min(bright, max(dark + (1.0 - dark) * (uLightDir.y - startFade) / (startFade - endFade), dark));
+      } else {
+        ki = bright;
+      }
     } else {
-      ki = 0.6;
+      ki = dark;
     }
   }
 
@@ -339,7 +353,9 @@ void main() {
     diffuse = ki * isld;
   }
 
+
   vec3 colour = diffuse + rim;
+  colour *= sunlight;
   colour = clamp(colour, 0.0, 1.0);
 
   gl_FragColor = vec4(colour, 1);
@@ -395,7 +411,7 @@ uniform sampler2D uShine;
 void main() {
   vec3 original = texture2D(uOriginal, vTexCoord).rgb;
   vec3 shine = texture2D(uShine, vTexCoord).rgb;
-  vec3 colour = clamp(original + shine, 0.0, 1.0);
+  vec3 colour = clamp(original + 0.5 * shine, 0.0, 1.0);
 
   gl_FragColor = vec4(colour, 1);
 }
@@ -411,14 +427,14 @@ void main() {
         <label for="blur">Blur</label>
         <input type="checkbox" checked id="water" name="water" />
         <label for="water">Water Colouring</label>
-        <input type="checkbox" id="mute" name="mute" />
+        <input type="checkbox" checked id="mute" name="mute" />
         <label for="mute">Mute</label>
       </form>
     </div>
   	<div class="canvasContainer">
   	  <canvas id="window" width="1280" height="720"></canvas>
     </div>
-    <audio id="oceanTheme" preload="auto" loop src="assets/sounds/ocean.mp3"></audio>
+    <audio id="oceanTheme" preload="auto" muted autoplay loop src="assets/sounds/ocean.mp3"></audio>
 
     <script type="text/javascript" src="scripts/objParser.js"></script>
     <script type="text/javascript" src="scripts/main.js"></script>
