@@ -156,6 +156,19 @@ function initPrograms() {
     'uIsIsland',
     'uIslandHeight',
   ]);
+
+  cutoffProgram = createProgram('cutoff', [
+    'aPos',
+    'aTexCoord',
+    'uTexture',
+  ]);
+
+  bloomProgram = createProgram('bloom', [
+    'aPos',
+    'aTexCoord',
+    'uOriginal',
+    'uShine',
+  ]);
 }
 
 function genCone() {
@@ -392,6 +405,8 @@ var edgesFrame;
 var horizontalBlurFrame;
 var blurFrame;
 var waterFrame;
+var sceneFrame;
+var cutoffFrame;
 
 function initBuffers() {
   var cone = genCone();
@@ -464,6 +479,8 @@ function initBuffers() {
   blurFrame = createFrameBuffer({ width: 2048, height: 2048 });
   waterFrame = createFrameBuffer({ width: 2048, height: 2048 });
   shadowFrame = createFrameBuffer({ width: 2048, height: 2048, clampToEdge: true });
+  sceneFrame = createFrameBuffer({ width: gl.drawingBufferWidth, height: gl.drawingBufferHeight, clampToEdge: true });
+  cutoffFrame = createFrameBuffer({ width: gl.drawingBufferWidth, height: gl.drawingBufferHeight, clampToEdge: true });
 }
 
 var regions = [];
@@ -703,34 +720,10 @@ function drawShadow() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-function drawTest() {
-  gl.useProgram(testProgram);
-  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-  gl.clearColor(1, 1, 1, 1);
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, perlinFrame.texture);
-  gl.uniform1i(testProgram.uTexture, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
-  gl.enableVertexAttribArray(testProgram.aPos);
-  gl.vertexAttribPointer(testProgram.aPos, 3, gl.FLOAT, false, 0, 0);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
-  gl.enableVertexAttribArray(testProgram.aTexCoord);
-  gl.vertexAttribPointer(testProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
-
-  gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-}
-
 function drawScene() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, sceneFrame.buffer);
   gl.useProgram(sceneProgram);
-  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.viewport(0, 0, sceneFrame.width, sceneFrame.height);
   gl.clearColor(0.2, 0.8, 1, 1.0);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -860,11 +853,92 @@ function drawScene() {
     gl.drawArrays(gl.TRIANGLES, group.offset, group.size);
   }
 
+  lastFrame = sceneFrame;
+
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
   gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-var frame = 0;
+function drawCutoff() {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, cutoffFrame.buffer);
+  gl.useProgram(waterProgram);
+  gl.viewport(0, 0, cutoffFrame.width, cutoffFrame.height);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
+  gl.uniform1i(waterProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(waterProgram.aPos);
+  gl.vertexAttribPointer(waterProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(waterProgram.aTexCoord);
+  gl.vertexAttribPointer(waterProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
+
+  lastFrame = cutoffFrame;
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+function drawBloom() {
+  gl.useProgram(waterProgram);
+  gl.viewport(0, 0, cutoffFrame.width, cutoffFrame.height);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sceneFrame.texture);
+  gl.uniform1i(waterProgram.uTexture, 0);
+
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
+  gl.uniform1i(waterProgram.uShine, 1);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(waterProgram.aPos);
+  gl.vertexAttribPointer(waterProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(waterProgram.aTexCoord);
+  gl.vertexAttribPointer(waterProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
+
+function drawTest() {
+  gl.useProgram(testProgram);
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+  gl.clearColor(1, 1, 1, 1);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, cutoffFrame.texture);
+  gl.uniform1i(testProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
+  gl.enableVertexAttribArray(testProgram.aPos);
+  gl.vertexAttribPointer(testProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
+  gl.enableVertexAttribArray(testProgram.aTexCoord);
+  gl.vertexAttribPointer(testProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, rectBuffer.numItems);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  gl.bindTexture(gl.TEXTURE_2D, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+}
 
 function draw(e) {
   requestAnimationFrame(draw);
@@ -883,8 +957,12 @@ function draw(e) {
 
   drawShadow();
   drawScene();
+  drawCutoff();
+  //drawBlur();
+  //drawBlur();
+  //drawBloom();
 
-  //drawTest();
+  drawTest();
 }
 
 var camera = {
@@ -909,6 +987,8 @@ var light = {
   pos: [0, 2.5, 0],
   dist: 1.5,
 };
+
+var frame = 0;
 
 function tick() {
   if (keys['up']) {

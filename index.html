@@ -346,6 +346,61 @@ void main() {
 }
 </script>
 
+<script id="cutoff-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+</script>
+<script id="cutoff-fs" type="x-shader/x-fragment">
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uTexture;
+
+void main() {
+  vec3 colour = texture2D(uTexture, vTexCoord).rgb;
+
+  if (length(1.0 - colour) < 0.5) {
+    gl_FragColor = vec4(colour, 1);
+  } else {
+    gl_FragColor = vec4(vec3(0), 1);
+  }
+}
+</script>
+
+<script id="bloom-vs" type="x-shader/x-vertex">
+attribute vec3 aPos;
+attribute vec2 aTexCoord;
+
+varying highp vec2 vTexCoord;
+
+void main() {
+  gl_Position = vec4(aPos, 1);
+  vTexCoord = aTexCoord;
+}
+</script>
+<script id="bloom-fs" type="x-shader/x-fragment">
+precision highp float;
+
+varying highp vec2 vTexCoord;
+uniform sampler2D uOriginal;
+uniform sampler2D uShine;
+
+void main() {
+  vec3 original = texture2D(uOriginal, vTexCoord).rgb;
+  vec3 shine = texture2D(uShine, vTexCoord).rgb;
+  vec3 colour = clamp(original + shine, 0.0, 1.0);
+
+  gl_FragColor = vec4(colour, 1);
+}
+</script>
+
   </head>
   <body>
     <div class="controls">
