@@ -17,6 +17,9 @@ function initHtml() {
   })
 
   canvas = document.getElementById('window');
+  canvas.requestPointerLock = canvas.requestPointerLock ||
+                              canvas.mozRequestPointerLock ||
+                              canvas.webkitRequestPointerLock;
   canvas.onclick = function() {
     canvas.requestPointerLock();
   };
@@ -152,11 +155,13 @@ function initPrograms() {
     'uTexture',
     'uIslandTexture',
     'uSunlightTexture',
+    'uSkyTexture',
     'uTexScale',
     'uBoatPos',
     'uFrame',
     'uIsWater',
     'uIsIsland',
+    'uIsBackground',
     'uIslandHeight',
   ]);
 
@@ -399,8 +404,13 @@ var link;
 var linkBuffer;
 var linkNormBuffer;
 var linkTexBuffer;
+var cylinder;
+var cylinderBuffer;
+var cylinderNormBuffer;
+var cylinderTexBuffer;
 var islandTexture;
 var sunlightTexture;
+var skyTexture;
 
 var lastFrame;
 var perlinFrame;
@@ -472,8 +482,22 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, linkTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, link.texCoords, gl.STATIC_DRAW);
 
+  cylinder = genObj(cylinderObj);
+  cylinderBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cylinderBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, cylinder.verts, gl.STATIC_DRAW);
+
+  cylinderNormBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cylinderNormBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, cylinder.normals, gl.STATIC_DRAW);
+
+  cylinderTexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, cylinderTexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, cylinder.texCoords, gl.STATIC_DRAW);
+
   islandTexture = createTexture({ image: islandImage, clampToEdge: true });
   sunlightTexture = createTexture({ image: sunlightImage, clampToEdge: true });
+  skyTexture = createTexture({ image: skyImage, clampToEdge: true });
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -863,6 +887,36 @@ function drawScene() {
     gl.drawArrays(gl.TRIANGLES, group.offset, group.size);
   }
 
+  M = mat4.create();
+  mat4.translate(M, M, cameraPos);
+  mat4.translate(M, M, [0, -5, 0 ]);
+  mat4.scale(M, M, [45, 10, 45]);
+  var modelView = mat4.create();
+  mat4.multiply(modelView, V, M);
+
+  gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
+
+  gl.uniform1i(sceneProgram.uIsBackground, true);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, skyTexture);
+  gl.uniform1i(sceneProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, cylinderBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aPos);
+  gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, cylinderNormBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aNorm);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, cylinderTexBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aTexCoord);
+  gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, cylinder.numItems);
+  gl.uniform1i(sceneProgram.uIsBackground, false);
+
+
   lastFrame = sceneFrame;
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
@@ -932,7 +986,7 @@ function drawTest() {
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, sceneFrame.texture);
+  gl.bindTexture(gl.TEXTURE_2D, cutoffFrame.texture);
   gl.uniform1i(testProgram.uTexture, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
@@ -1074,6 +1128,7 @@ function scroll(e) {
     camera.distance = Math.max(camera.distance, 0.4);
   } else if (e.wheelDelta < 0) {
     camera.distance += camera.zoom;
+    camera.distance = Math.min(camera.distance, 15);
   }
 }
 
@@ -1130,12 +1185,19 @@ function main() {
 
 var islandImage = new Image();
 var sunlightImage = new Image();
+var skyImage = new Image();
+var cylinderObj;
 var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
-  islandImage.onload = function () {
-    sunlightImage.onload = function () {
-      main();
+  cylinderObj = parseObj('assets/cylinder', function () {
+    islandImage.onload = function () {
+      sunlightImage.onload = function () {
+        skyImage.onload = function () {
+          main();
+        }
+        skyImage.src = 'assets/textures/sky.png';
+      }
+      sunlightImage.src = 'assets/textures/sunlight.png';
     }
-    sunlightImage.src = 'assets/textures/sunlight.png';
-  }
-  islandImage.src = 'assets/textures/island.png';
+    islandImage.src = 'assets/textures/island.png';
+  });
 });
