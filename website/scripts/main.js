@@ -162,6 +162,7 @@ function initPrograms() {
     'uIsWater',
     'uIsIsland',
     'uIsBackground',
+    'uIsSun',
     'uIslandHeight',
   ]);
 
@@ -495,9 +496,23 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, cylinderTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, cylinder.texCoords, gl.STATIC_DRAW);
 
+  sphere = genObj(sphereObj);
+  sphereBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, sphereBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, sphere.verts, gl.STATIC_DRAW);
+
+  sphereNormBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, sphere.normals, gl.STATIC_DRAW);
+
+  sphereTexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, sphereTexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, sphere.texCoords, gl.STATIC_DRAW);
+
   islandTexture = createTexture({ image: islandImage, clampToEdge: true });
   sunlightTexture = createTexture({ image: sunlightImage, clampToEdge: true });
   skyTexture = createTexture({ image: skyImage, clampToEdge: true });
+  sunTexture = createTexture({ image: sunImage, clampToEdge: true });
 
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
@@ -889,8 +904,8 @@ function drawScene() {
 
   M = mat4.create();
   mat4.translate(M, M, cameraPos);
-  mat4.translate(M, M, [0, -5, 0 ]);
-  mat4.scale(M, M, [45, 10, 45]);
+  mat4.translate(M, M, [0, -3, 0 ]);
+  mat4.scale(M, M, [45, 25, 45]);
   var modelView = mat4.create();
   mat4.multiply(modelView, V, M);
 
@@ -916,6 +931,33 @@ function drawScene() {
   gl.drawArrays(gl.TRIANGLES, 0, cylinder.numItems);
   gl.uniform1i(sceneProgram.uIsBackground, false);
 
+  M = mat4.create();
+  mat4.translate(M, M, light.sun);
+  mat4.scale(M, M, [light.sunSize, light.sunSize, light.sunSize]);
+  var modelView = mat4.create();
+  mat4.multiply(modelView, V, M);
+
+  gl.uniform1i(sceneProgram.uIsSun, true);
+  gl.uniformMatrix4fv(sceneProgram.uModelView, false, modelView);
+
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sunTexture);
+  gl.uniform1i(sceneProgram.uTexture, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, sphereBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aPos);
+  gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, sphereNormBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aNorm);
+  gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, sphereTexBuffer);
+  gl.enableVertexAttribArray(sceneProgram.aTexCoord);
+  gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+  gl.drawArrays(gl.TRIANGLES, 0, sphere.numItems);
+  gl.uniform1i(sceneProgram.uIsSun, false);
 
   lastFrame = sceneFrame;
 
@@ -1022,8 +1064,8 @@ function draw(e) {
   drawShadow();
   drawScene();
   drawCutoff();
-  drawBlur(100);
-  drawBlur(100);
+  drawBlur(50);
+  drawBlur(50);
   drawBloom();
 
   //drawTest();
@@ -1052,6 +1094,9 @@ var light = {
   pos: [0, 2.5, 0],
   dist: 1.5,
   animating: true,
+  sun: [100, 100, 100],
+  sunDist: 40,
+  sunSize: 2.5,
 };
 
 var frame = 0;
@@ -1100,13 +1145,16 @@ function tick() {
   }
 
   if (light.animating) {
-    light.rotation += 0.005;
+    light.rotation += 0.002;
   }
 
   light.dir = [Math.cos(light.rotation), 2 * Math.pow(Math.sin(light.rotation / 2), 4) - 1, Math.sin(light.rotation)];
 
   vec3.scale(light.pos, light.dir, -light.dist);
   vec3.add(light.pos, light.pos, boat.pos);
+
+  vec3.scale(light.sun, light.dir, -light.sunDist);
+  vec3.add(light.sun, light.sun, boat.pos);
 
   moveRegions();
 
@@ -1186,18 +1234,25 @@ function main() {
 var islandImage = new Image();
 var sunlightImage = new Image();
 var skyImage = new Image();
+var sunImage = new Image();
 var cylinderObj;
+var sphereObj;
 var toonLink = parseObjMtl('assets/linkboat/linkboat', function () {
   cylinderObj = parseObj('assets/cylinder', function () {
-    islandImage.onload = function () {
-      sunlightImage.onload = function () {
-        skyImage.onload = function () {
-          main();
+    sphereObj = parseObj('assets/sphere', function () {
+      islandImage.onload = function () {
+        sunlightImage.onload = function () {
+          skyImage.onload = function () {
+            sunImage.onload = function () {
+              main();
+            }
+            sunImage.src = 'assets/textures/sun.png';
+          }
+          skyImage.src = 'assets/textures/sky.png';
         }
-        skyImage.src = 'assets/textures/sky.png';
+        sunlightImage.src = 'assets/textures/sunlight.png';
       }
-      sunlightImage.src = 'assets/textures/sunlight.png';
-    }
-    islandImage.src = 'assets/textures/island.png';
+      islandImage.src = 'assets/textures/island.png';
+    });
   });
 });
