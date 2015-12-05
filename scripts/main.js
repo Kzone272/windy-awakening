@@ -1,6 +1,7 @@
 var edgesCheckbox;
 var blurCheckbox;
-var blurCheckbos;
+var waterCheckbox;
+var smallWaterCheckbox;
 var testingMode;
 var canvas;
 var oceanTheme;
@@ -10,6 +11,7 @@ function initHtml() {
   edgesCheckbox = document.getElementById('edges');
   blurCheckbox = document.getElementById('blur');
   waterCheckbox = document.getElementById('water');
+  smallWaterCheckbox = document.getElementById('smallWater');
   testingMode = document.getElementById('testing');
 
   oceanTheme = document.getElementById('oceanTheme');
@@ -233,9 +235,7 @@ function waterHeight(x, z) {
   return 0.2 * Math.sin(x) * Math.sin(z + frame / 100);
 }
 
-function genWater() {
-  var size = 50;
-  var density = 100;
+function genWater(size, density) {
   var width = size / density;
   var half = width / 2;
   var texScale = 4;
@@ -400,6 +400,9 @@ var rectTexBuffer;
 var waterBuffer;
 var waterNormBuffer;
 var waterTexBuffer;
+var smallWaterBuffer;
+var smallWaterNormBuffer;
+var smallWaterTexBuffer;
 var islandBuffer;
 var islandNormBuffer;
 var islandTexBuffer;
@@ -442,7 +445,7 @@ function initBuffers() {
   gl.bindBuffer(gl.ARRAY_BUFFER, rectTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, rect.texCoords, gl.STATIC_DRAW);
 
-  var water = genWater();
+  var water = genWater(50, 100);
   waterBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, waterBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, water.verts, gl.STATIC_DRAW)
@@ -456,6 +459,21 @@ function initBuffers() {
   waterTexBuffer = gl.createBuffer();
   gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, water.texCoords, gl.STATIC_DRAW);
+
+  var smallWater = genWater(3, 10);
+  smallWaterBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, smallWaterBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, smallWater.verts, gl.STATIC_DRAW)
+  smallWaterBuffer.numItems = smallWater.numItems;
+  smallWaterBuffer.texScale = smallWater.texScale;
+
+  smallWaterNormBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, smallWaterNormBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, smallWater.normals, gl.STATIC_DRAW);
+
+  smallWaterTexBuffer = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, smallWaterTexBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, smallWater.texCoords, gl.STATIC_DRAW);
 
   var island = genIsland();
   islandBuffer = gl.createBuffer();
@@ -829,19 +847,35 @@ function drawScene() {
   gl.bindTexture(gl.TEXTURE_2D, lastFrame.texture);
   gl.uniform1i(sceneProgram.uTexture, 0);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, waterBuffer);
-  gl.enableVertexAttribArray(sceneProgram.aPos);
-  gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+  if (smallWaterCheckbox.checked) {
+    gl.bindBuffer(gl.ARRAY_BUFFER, smallWaterBuffer);
+    gl.enableVertexAttribArray(sceneProgram.aPos);
+    gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, waterNormBuffer);
-  gl.enableVertexAttribArray(sceneProgram.aNorm);
-  gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, smallWaterNormBuffer);
+    gl.enableVertexAttribArray(sceneProgram.aNorm);
+    gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
-  gl.enableVertexAttribArray(sceneProgram.aTexCoord);
-  gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, smallWaterTexBuffer);
+    gl.enableVertexAttribArray(sceneProgram.aTexCoord);
+    gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
 
-  gl.drawArrays(gl.TRIANGLES, 0, waterBuffer.numItems);
+    gl.drawArrays(gl.TRIANGLES, 0, smallWaterBuffer.numItems);
+  } else {
+    gl.bindBuffer(gl.ARRAY_BUFFER, waterBuffer);
+    gl.enableVertexAttribArray(sceneProgram.aPos);
+    gl.vertexAttribPointer(sceneProgram.aPos, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, waterNormBuffer);
+    gl.enableVertexAttribArray(sceneProgram.aNorm);
+    gl.vertexAttribPointer(sceneProgram.aNorm, 3, gl.FLOAT, false, 0, 0);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, waterTexBuffer);
+    gl.enableVertexAttribArray(sceneProgram.aTexCoord);
+    gl.vertexAttribPointer(sceneProgram.aTexCoord, 2, gl.FLOAT, false, 0, 0);
+
+    gl.drawArrays(gl.TRIANGLES, 0, waterBuffer.numItems);
+  }
   gl.uniform1i(sceneProgram.uIsWater, false);
 
   gl.uniform1i(sceneProgram.uIsIsland, true);
