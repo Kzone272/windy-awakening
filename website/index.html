@@ -427,19 +427,42 @@ void main() {
   <body>
     <div class="controls">
       <form>
+        <input type="checkbox" checked id="mute" name="mute" />
+        <label for="mute">Mute</label>
         <input type="checkbox" checked id="edges" name="edges" />
         <label for="edges">Detect Edges</label>
         <input type="checkbox" checked id="blur" name="blur" />
         <label for="blur">Blur</label>
         <input type="checkbox" checked id="water" name="water" />
         <label for="water">Water Colouring</label>
-        <input type="checkbox" checked id="mute" name="mute" />
-        <label for="mute">Mute</label>
+        &nbsp; | &nbsp;
+        <label for="testing">Testing Mode:</label>
+        <select id="testing" name="testing">
+          <option value="none">None</option>
+          <option value="bloom">No Bloom</option>
+          <option value="cutoff">View Cutoff</option>
+          <option value="shadow">View Shadow Map</option>
+          <option value="perlin">Perlin Noise</option>
+        </select>
       </form>
     </div>
   	<div class="canvasContainer">
   	  <canvas id="window" width="1280" height="720"></canvas>
     </div>
+
+    <p>
+      Controls:
+      <ul>
+        <li>Click the canvas to capture the mouse</li>
+        <li>WASD to move the boat</li>
+        <li>Mouse to rotate camera</li>
+        <li>Scroll wheel to zoom camera</li>
+        <li>Space to freeze day/night cycle</li>
+        <li>Hold Q to reverse day/night cycle</li>
+        <li>Hold E to advance day/night cycle</li>
+      </ul>
+    </p>
+
     <audio id="oceanTheme" preload="auto" muted autoplay loop src="assets/sounds/ocean.mp3"></audio>
 
     <script type="text/javascript" src="scripts/objParser.js"></script>

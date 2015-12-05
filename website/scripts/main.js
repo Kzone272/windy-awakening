@@ -1,14 +1,16 @@
 var edgesCheckbox;
 var blurCheckbox;
 var blurCheckbos;
+var testingMode;
 var canvas;
 var oceanTheme;
 
 function initHtml() {
+  muteCheckbox = document.getElementById('mute');
   edgesCheckbox = document.getElementById('edges');
   blurCheckbox = document.getElementById('blur');
   waterCheckbox = document.getElementById('water');
-  muteCheckbox = document.getElementById('mute');
+  testingMode = document.getElementById('testing');
 
   oceanTheme = document.getElementById('oceanTheme');
 
@@ -1021,14 +1023,14 @@ function drawBloom() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-function drawTest() {
+function drawTest(frame) {
   gl.useProgram(testProgram);
   gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
   gl.clearColor(1, 1, 1, 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
   gl.activeTexture(gl.TEXTURE0);
-  gl.bindTexture(gl.TEXTURE_2D, cutoffFrame.texture);
+  gl.bindTexture(gl.TEXTURE_2D, frame.texture);
   gl.uniform1i(testProgram.uTexture, 0);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, rectBuffer);
@@ -1046,7 +1048,7 @@ function drawTest() {
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 }
 
-function draw(e) {
+function draw() {
   requestAnimationFrame(draw);
 
   drawVoronoi();
@@ -1068,7 +1070,16 @@ function draw(e) {
   drawBlur(50);
   drawBloom();
 
-  //drawTest();
+  var mode = testingMode.options[testingMode.selectedIndex].value;
+  if (mode == 'bloom') {
+    drawTest(sceneFrame);
+  } else if (mode == 'cutoff') {
+    drawTest(cutoffFrame);
+  } else if (mode == 'shadow') {
+    drawTest(shadowFrame);
+  } else if (mode == 'perlin') {
+    drawTest(perlinFrame);
+  }
 }
 
 var camera = {
