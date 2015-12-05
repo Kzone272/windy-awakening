@@ -1216,10 +1216,10 @@ function mouseMove(e) {
 }
 
 function scroll(e) {
-  if (e.wheelDelta > 0) {
+  if (e.deltaY < 0) {
     camera.distance -= camera.zoom;
     camera.distance = Math.max(camera.distance, 0.4);
-  } else if (e.wheelDelta < 0) {
+  } else if (e.deltaY > 0) {
     camera.distance += camera.zoom;
     camera.distance = Math.min(camera.distance, 15);
   }
