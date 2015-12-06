@@ -4,6 +4,58 @@
 		"selected_items":
 		[
 			[
+				"small",
+				"smallWaterCheckbox"
+			],
+			[
+				"blom",
+				"bloom"
+			],
+			[
+				"key",
+				"keyCode"
+			],
+			[
+				"ke",
+				"keyCode"
+			],
+			[
+				"uIs",
+				"uIsIsland"
+			],
+			[
+				"uLight",
+				"uLightDir"
+			],
+			[
+				"create",
+				"createTexture"
+			],
+			[
+				"tex",
+				"texCoord"
+			],
+			[
+				"isl",
+				"islandHeight"
+			],
+			[
+				"gl_fr",
+				"gl_FragCoord"
+			],
+			[
+				"gl_Frag",
+				"gl_FragCoord"
+			],
+			[
+				"gl_C",
+				"gl_FragCoord"
+			],
+			[
+				"DEPTH_",
+				"DEPTH_COMPONENT16"
+			],
+			[
 				"moe",
 				"movementX"
 			],
@@ -50,10 +102,6 @@
 			[
 				"vor",
 				"voronoiFrame"
-			],
-			[
-				"tex",
-				"texCoords"
 			],
 			[
 				"draw",
@@ -107,7 +155,15 @@
 			"file": "website/index.html",
 			"settings":
 			{
-				"buffer_size": 5015,
+				"buffer_size": 11836,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "README.md",
+			"settings":
+			{
+				"buffer_size": 3239,
 				"line_ending": "Windows"
 			}
 		},
@@ -115,23 +171,22 @@
 			"file": "website/scripts/main.js",
 			"settings":
 			{
-				"buffer_size": 21291,
+				"buffer_size": 38736,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "website/scripts/objParser.js",
 			"settings":
 			{
-				"buffer_size": 4415,
+				"buffer_size": 0,
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "website/css/style.css",
+			"file": "design/todo.txt",
 			"settings":
 			{
-				"buffer_size": 164,
+				"buffer_size": 150,
 				"line_ending": "Windows"
 			}
 		}
@@ -175,21 +230,26 @@
 		"/C/repos/windy-awakening",
 		"/C/repos/windy-awakening/website",
 		"/C/repos/windy-awakening/website/css",
-		"/C/repos/windy-awakening/website/scripts"
+		"/C/repos/windy-awakening/website/scripts",
+		"/C/repos/windy-awakening/website/scripts/lib"
 	],
 	"file_history":
 	[
+		"/C/Users/Kevin/AppData/Local/Temp/Temp1_windy-awakening.zip/windy-awakening/README.md",
 		"/C/repos/windy-awakening/website/index.html",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/C/repos/windy-awakening/website/scripts/main.js",
+		"/C/repos/windy-awakening/website/scripts/objParser.js",
+		"/C/repos/windy-awakening/website/css/style.css",
+		"/C/Users/Kevin/AppData/Local/Temp/Temp1_GLSL-noise.zip/GLSLnoisetest4.frag",
+		"/C/repos/windy-awakening/website/scripts/lib/gl-matrix.js",
 		"/C/repos/windy-awakening/website/scripts/toonlink.json",
 		"/D/Downloads/good toon link.json",
 		"/C/repos/windy-awakening/website/scripts/Three.js",
 		"/C/repos/windy-awakening/website/scripts/gl-matrix-min.js",
-		"/C/repos/windy-awakening/website/scripts/main.js",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Default (Windows).sublime-keymap",
-		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
-		"/C/repos/windy-awakening/website/css/style.css",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
-		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/JSON.sublime-settings",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/HTML.sublime-settings",
 		"/C/repos/windy-awakening/windy-awakening.sublime-project",
@@ -200,13 +260,14 @@
 	],
 	"find":
 	{
-		"height": 36.0
+		"height": 35.0
 	},
 	"find_in_files":
 	{
 		"height": 93.0,
 		"where_history":
 		[
+			"sland",
 			""
 		]
 	},
@@ -215,125 +276,134 @@
 		"case_sensitive": false,
 		"find_history":
 		[
-			"tick()",
-			"addEventLis",
-			"mouseX",
-			"draw",
-			"camera",
-			"boat",
-			"pitch",
-			"float",
-			"backHeight",
-			"boat.pos",
-			"uiswa",
-			"waterheight",
-			"apos",
-			"waterBuffer",
-			" *",
-			"();\n",
-			"0",
-			"lightdir",
-			"V =",
-			"console.log",
-			"linknormbuffer",
-			"uniform3f",
-			";\n",
-			"mtl",
-			"linknormbuffer",
-			"obj.",
-			"size",
-			"];\n",
-			"console.log",
-			"parseObj",
-			"scale",
-			"linkBUffer",
-			"texCoords",
-			"face.vertexNormals",
-			"foreach",
-			"drawblur",
-			"blur",
-			"src",
-			"load",
-			"ratio",
-			"0",
-			"orthoproj",
-			"M",
-			"uwidth",
-			"1280",
-			"edgesFrame",
-			"createrenderbu",
-			"createtexture",
-			"height",
-			"/frame =",
-			"frame",
-			"genrect",
-			"waterbuffer.numitems",
-			"generatemipmap",
 			"genwater",
-			"6",
-			" (",
-			"push",
-			"rect",
-			"waterBuffer",
-			"blurBuffer",
-			"horizontalBlurBuffer",
-			"edgesBuffer",
-			"voronoiBuffer",
-			"waterProgram",
-			"gl.createtexture",
-			"uniform1",
-			"drawingBufferWidth",
-			"720",
-			"1280",
-			"drawingBufferHeight",
-			".y",
-			".x",
-			"t",
-			"].",
-			"var i",
-			");\n",
-			"persPro",
-			"persp",
-			"pers",
-			"udir",
-			"blurProgram",
-			"]);\n",
-			"texture",
-			"buffer_bit",
-			"initPrograms",
-			"blur",
-			"triangle_",
-			"0",
-			"framebuffer",
-			"texture1",
-			"texture0",
-			"  }",
-			"/*\n",
-			"outTexture",
-			"nearest",
-			"u_texture",
-			"P)",
-			"P",
+			"water",
+			"texScale",
+			"waterbuffer",
+			"checkbox",
+			"sma",
+			"water",
+			"perlin",
+			"testingMode",
 			"createframe",
-			"console.log",
-			"program",
-			"recttexbuffer",
-			"bindbuffer",
-			"textureProgram",
-			"uni",
-			"att",
-			"vertex",
-			"cone",
-			"attrib",
-			"Atrtib",
-			"buffer",
-			"create",
-			"vertex",
-			"save",
-			"/save",
-			"center",
-			">\n",
-			"console.log"
+			"draw()",
+			"draw",
+			"bloomCheckbox",
+			"drawbloom",
+			"scale",
+			"animating",
+			"0",
+			"cutoff",
+			"100",
+			"sunSize",
+			"sun",
+			"cylinder",
+			"30",
+			"skytexture",
+			"sphere",
+			"cylindernormbuffer",
+			"cylindertexbuffer",
+			"suntexture",
+			"skytexture",
+			"sunImage",
+			"skyTexture",
+			"light.po",
+			"cylinder",
+			"genobj",
+			"gen",
+			"cutoff",
+			"sunlighttexture",
+			"distance",
+			"49",
+			"perspproj",
+			"cylinder",
+			"link",
+			"ortho",
+			"orthoproj",
+			"perspproj",
+			"cutoff",
+			"for",
+			"light.dir",
+			";\n",
+			"texture0",
+			"light.dir",
+			"keys[",
+			"abs",
+			"lightdir",
+			"sunset",
+			"sunsetimafe",
+			"sunsetTexture",
+			"islandtexture",
+			"ubluramo",
+			"blur",
+			"waterProgram",
+			"drawcutoff",
+			"//  ",
+			"parsemtl",
+			"parseobjmtl",
+			"perlinframe",
+			"islandtexture",
+			"islandtex",
+			"genobj",
+			"initbuffers",
+			"4",
+			"3",
+			"height",
+			"tick",
+			"perlinframe",
+			"lastframe",
+			"ushadowmap",
+			"uislandhei",
+			"genislan",
+			"water",
+			"drawwater",
+			"slands",
+			"Islands",
+			"water",
+			"40",
+			"blur",
+			"water",
+			"regions",
+			"water.texs",
+			"texScale",
+			"drawtest",
+			"test()",
+			"genwater",
+			"test",
+			";\n",
+			"drawPerlin",
+			"draw(",
+			"draw",
+			"drawperli",
+			"drawperlin",
+			"drawperlin		",
+			"zoom",
+			"camera.distance",
+			"clearcolo",
+			"clear",
+			"camera.distance",
+			"camera.distan",
+			"drawperlin",
+			"camera.pos",
+			"741",
+			"genWate",
+			"inithtml",
+			"html",
+			"waterheight",
+			"boat.offset",
+			"offset",
+			"0.1",
+			"offset",
+			"waterhe",
+			"offset",
+			"waterheight",
+			"drawperlin",
+			"mod",
+			"25",
+			"uWidth",
+			"fract",
+			"frag",
+			"lerp"
 		],
 		"highlight": true,
 		"in_selection": false,
@@ -341,6 +411,18 @@
 		"regex": false,
 		"replace_history":
 		[
+			"smallWater",
+			"cylinder",
+			"sphere",
+			"cylinder",
+			"scene",
+			"bloomProgram",
+			"cutoffProgram",
+			"island",
+			"sland",
+			"islands",
+			"Islands",
+			"mix",
 			"faceUVs",
 			"water",
 			"waterFrame",
@@ -373,15 +455,15 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 5015,
+						"buffer_size": 11836,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1844,
-								1844
+								11555,
+								11205
 							]
 						],
 						"settings":
@@ -391,7 +473,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1332.0,
+						"translation.y": 8167.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -399,29 +481,27 @@
 				},
 				{
 					"buffer": 1,
-					"file": "website/scripts/main.js",
+					"file": "README.md",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 21291,
+						"buffer_size": 3239,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								16267,
-								16267
+								2376,
+								2376
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/JavaScript/JavaScript.tmLanguage",
-							"tab_size": 2,
-							"translate_tabs_to_spaces": true
+							"syntax": "Packages/Markdown/Markdown.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 11112.0,
+						"translation.y": 741.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -429,19 +509,19 @@
 				},
 				{
 					"buffer": 2,
-					"file": "website/scripts/objParser.js",
+					"file": "website/scripts/main.js",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4415,
+						"buffer_size": 38736,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								1380,
-								1380
+								36908,
+								36908
 							]
 						],
 						"settings":
@@ -451,38 +531,66 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1680.0,
+						"translation.y": 24021.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 2,
+					"stack_index": 3,
 					"type": "text"
 				},
 				{
 					"buffer": 3,
-					"file": "website/css/style.css",
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 164,
+						"buffer_size": 0,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								6,
-								6
+								0,
+								0
 							]
 						],
 						"settings":
 						{
-							"syntax": "Packages/CSS/CSS.tmLanguage"
+							"default_dir": "C:\\repos\\windy-awakening",
+							"syntax": "Packages/Text/Plain text.tmLanguage"
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 3,
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "design/todo.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 150,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								21,
+								21
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
 					"type": "text"
 				}
 			]
@@ -490,7 +598,7 @@
 	],
 	"incremental_find":
 	{
-		"height": 36.0
+		"height": 27.0
 	},
 	"input":
 	{
@@ -527,7 +635,7 @@
 	"project": "windy-awakening.sublime-project",
 	"replace":
 	{
-		"height": 66.0
+		"height": 64.0
 	},
 	"save_all_on_build": true,
 	"select_file":
