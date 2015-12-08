@@ -235,6 +235,7 @@
 	],
 	"file_history":
 	[
+		"/C/Users/Kevin/Programming/Game Jam Fall 2014/GJ/README.md",
 		"/C/Users/Kevin/AppData/Local/Temp/Temp1_windy-awakening.zip/windy-awakening/README.md",
 		"/C/repos/windy-awakening/website/index.html",
 		"/C/Users/Kevin/AppData/Roaming/Sublime Text 3/Packages/User/Preferences.sublime-settings",
@@ -446,7 +447,7 @@
 	"groups":
 	[
 		{
-			"selected": 0,
+			"selected": 1,
 			"sheets":
 			[
 				{
@@ -476,7 +477,7 @@
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 0,
+					"stack_index": 1,
 					"type": "text"
 				},
 				{
@@ -492,8 +493,8 @@
 						"selection":
 						[
 							[
-								1978,
-								1978
+								3239,
+								3239
 							]
 						],
 						"settings":
@@ -501,10 +502,10 @@
 							"syntax": "Packages/Markdown/Markdown.tmLanguage"
 						},
 						"translation.x": 0.0,
-						"translation.y": 741.0,
+						"translation.y": 1007.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 1,
+					"stack_index": 0,
 					"type": "text"
 				},
 				{
