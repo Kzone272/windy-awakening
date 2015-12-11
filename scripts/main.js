@@ -10,6 +10,7 @@ function initHtml() {
   muteCheckbox = document.getElementById('mute');
   edgesCheckbox = document.getElementById('edges');
   blurCheckbox = document.getElementById('blur');
+  secondBlurCheckbox = document.getElementById('secondBlur');
   waterCheckbox = document.getElementById('water');
   smallWaterCheckbox = document.getElementById('smallWater');
   testingMode = document.getElementById('testing');
@@ -1091,7 +1092,9 @@ function draw() {
   }
   if (blurCheckbox.checked) {
     drawBlur(30);
-    drawBlur(30);
+    if (secondBlurCheckbox.checked) {
+      drawBlur(30);
+    }
   }
   if (waterCheckbox.checked) {
     drawWater();
@@ -1101,7 +1104,9 @@ function draw() {
   drawScene();
   drawCutoff();
   drawBlur(50);
-  drawBlur(50);
+  if (secondBlurCheckbox.checked) {
+    drawBlur(50);
+  }
   drawBloom();
 
   var mode = testingMode.options[testingMode.selectedIndex].value;
