@@ -1,10 +1,12 @@
 # Windy Awakening
 
-## Kevin Haslett - 20468033
+A recreation of the sailing experience from The Legend of Zelda: The Wind Waker
 
-### CS488 Fall 2015 Final Project
+Created for my CS488 Graphics Fall 2015 Final Project and **gold medal winner** for best project that term
 
-#### Installation Instructions
+It's live: http://kevinhaslett.com/
+
+#### Installation Instructions (For Running Locally)
 
 First unzip the "website" folder
 
